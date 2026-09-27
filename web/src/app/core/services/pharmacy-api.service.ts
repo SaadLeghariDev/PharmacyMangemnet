@@ -43,20 +43,41 @@ import {
   AlertRuleDto,
   AlertRuleSearchParams,
   AlertSearchParams,
+  AttachmentDto,
   AuditLogDto,
   AuditLogSearchParams,
+  BarcodePrintJobDto,
+  BarcodePrintJobSearchParams,
   BranchSettingDto,
+  CreateAttachmentRequest,
+  CreateBarcodePrintJobRequest,
   CreateBranchRequest,
+  CreateDeviceAssignmentRequest,
+  CreateDeviceEventRequest,
+  CreateDeviceRequest,
+  CreateEntityAttachmentRequest,
+  CreatePrintTemplateRequest,
   CreateReasonCodeRequest,
   CreateRoleRequest,
   CreateUserRequest,
+  DeviceAssignmentDto,
+  DeviceDto,
+  DeviceEventDto,
+  DeviceSearchParams,
+  DeviceSettingDto,
+  DeviceTypeDto,
+  EntityAttachmentDto,
+  EntityAttachmentSearchParams,
   PermissionDto,
+  PrintTemplateDto,
+  PrintTemplateSearchParams,
   ReasonCodeDto,
   ReasonCodeSearchParams,
   RoleDto,
   RoleSearchParams,
   SaleDto,
   SaleReceiptDto,
+  SimulateBarcodePrintJobRequest,
   SupplierDto,
   SupplierLedgerEntryDto,
   SupplierLedgerSearchParams,
@@ -69,9 +90,12 @@ import {
   TaxRateDto,
   TenantSettingDto,
   UpdateAlertRuleRequest,
+  UpdateBarcodePrintJobStatusRequest,
   UpdateBranchRequest,
+  UpdateDeviceRequest,
   UpdateExpenseCategoryRequest,
   UpdatePriceListRequest,
+  UpdatePrintTemplateRequest,
   UpdateProductPriceRequest,
   UpdateReasonCodeRequest,
   UpdateReorderRuleRequest,
@@ -79,6 +103,7 @@ import {
   UpdateTaxProfileRequest,
   UpdateTaxRateRequest,
   UpdateUserRequest,
+  UpsertDeviceSettingRequest,
   UpsertSettingRequest,
   UserAdminDto,
   UserAdminSearchParams,
@@ -744,6 +769,174 @@ export class PharmacyApiService {
     if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
     return this.http
       .get<ApiResponse<PagedResult<AuditLogDto>>>(`${this.base}/api/v1/audit-logs`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  listDeviceTypes(search?: string, page = 1, pageSize = 50): Observable<PagedResult<DeviceTypeDto>> {
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    if (search?.trim()) params = params.set('search', search.trim());
+    return this.http
+      .get<ApiResponse<PagedResult<DeviceTypeDto>>>(`${this.base}/api/v1/device-types`, { params })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchDevices(params: DeviceSearchParams = {}): Observable<PagedResult<DeviceDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.deviceTypeId != null) httpParams = httpParams.set('deviceTypeId', params.deviceTypeId);
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    return this.http
+      .get<ApiResponse<PagedResult<DeviceDto>>>(`${this.base}/api/v1/devices`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createDevice(request: CreateDeviceRequest): Observable<DeviceDto> {
+    return this.http
+      .post<ApiResponse<DeviceDto>>(`${this.base}/api/v1/devices`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateDevice(id: number, request: UpdateDeviceRequest): Observable<DeviceDto> {
+    return this.http
+      .put<ApiResponse<DeviceDto>>(`${this.base}/api/v1/devices/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchDeviceAssignments(deviceId?: number, terminalId?: number, isActive?: boolean | null, page = 1): Observable<PagedResult<DeviceAssignmentDto>> {
+    let params = new HttpParams().set('page', page).set('pageSize', 50);
+    if (deviceId != null) params = params.set('deviceId', deviceId);
+    if (terminalId != null) params = params.set('terminalId', terminalId);
+    if (isActive != null) params = params.set('isActive', isActive);
+    return this.http
+      .get<ApiResponse<PagedResult<DeviceAssignmentDto>>>(`${this.base}/api/v1/device-assignments`, { params })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createDeviceAssignment(request: CreateDeviceAssignmentRequest): Observable<DeviceAssignmentDto> {
+    return this.http
+      .post<ApiResponse<DeviceAssignmentDto>>(`${this.base}/api/v1/device-assignments`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  endDeviceAssignment(id: number): Observable<DeviceAssignmentDto> {
+    return this.http
+      .post<ApiResponse<DeviceAssignmentDto>>(`${this.base}/api/v1/device-assignments/${id}/end`, {})
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getDeviceSettings(deviceId: number, key?: string): Observable<DeviceSettingDto[]> {
+    let params = new HttpParams();
+    if (key?.trim()) params = params.set('key', key.trim());
+    return this.http
+      .get<ApiResponse<DeviceSettingDto[]>>(`${this.base}/api/v1/devices/${deviceId}/settings`, { params })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  upsertDeviceSetting(deviceId: number, request: UpsertDeviceSettingRequest): Observable<DeviceSettingDto> {
+    return this.http
+      .put<ApiResponse<DeviceSettingDto>>(`${this.base}/api/v1/devices/${deviceId}/settings`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchDeviceEvents(deviceId: number, page = 1, pageSize = 20): Observable<PagedResult<DeviceEventDto>> {
+    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    return this.http
+      .get<ApiResponse<PagedResult<DeviceEventDto>>>(`${this.base}/api/v1/devices/${deviceId}/events`, { params })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  appendDeviceEvent(deviceId: number, request: CreateDeviceEventRequest): Observable<DeviceEventDto> {
+    return this.http
+      .post<ApiResponse<DeviceEventDto>>(`${this.base}/api/v1/devices/${deviceId}/events`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchPrintTemplates(params: PrintTemplateSearchParams = {}): Observable<PagedResult<PrintTemplateDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.templateType) httpParams = httpParams.set('templateType', params.templateType);
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    return this.http
+      .get<ApiResponse<PagedResult<PrintTemplateDto>>>(`${this.base}/api/v1/print-templates`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createPrintTemplate(request: CreatePrintTemplateRequest): Observable<PrintTemplateDto> {
+    return this.http
+      .post<ApiResponse<PrintTemplateDto>>(`${this.base}/api/v1/print-templates`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updatePrintTemplate(id: number, request: UpdatePrintTemplateRequest): Observable<PrintTemplateDto> {
+    return this.http
+      .put<ApiResponse<PrintTemplateDto>>(`${this.base}/api/v1/print-templates/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchBarcodePrintJobs(params: BarcodePrintJobSearchParams = {}): Observable<PagedResult<BarcodePrintJobDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.status) httpParams = httpParams.set('status', params.status);
+    if (params.productId != null) httpParams = httpParams.set('productId', params.productId);
+    return this.http
+      .get<ApiResponse<PagedResult<BarcodePrintJobDto>>>(`${this.base}/api/v1/barcode-print-jobs`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createBarcodePrintJob(request: CreateBarcodePrintJobRequest): Observable<BarcodePrintJobDto> {
+    return this.http
+      .post<ApiResponse<BarcodePrintJobDto>>(`${this.base}/api/v1/barcode-print-jobs`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateBarcodePrintJobStatus(id: number, request: UpdateBarcodePrintJobStatusRequest): Observable<BarcodePrintJobDto> {
+    return this.http
+      .put<ApiResponse<BarcodePrintJobDto>>(`${this.base}/api/v1/barcode-print-jobs/${id}/status`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  simulateBarcodePrintJob(id: number, request: SimulateBarcodePrintJobRequest = {}): Observable<BarcodePrintJobDto> {
+    return this.http
+      .post<ApiResponse<BarcodePrintJobDto>>(`${this.base}/api/v1/barcode-print-jobs/${id}/simulate-complete`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchAttachments(search?: string, page = 1, pageSize = 20): Observable<PagedResult<AttachmentDto>> {
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    if (search?.trim()) params = params.set('search', search.trim());
+    return this.http
+      .get<ApiResponse<PagedResult<AttachmentDto>>>(`${this.base}/api/v1/attachments`, { params })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createAttachment(request: CreateAttachmentRequest): Observable<AttachmentDto> {
+    return this.http
+      .post<ApiResponse<AttachmentDto>>(`${this.base}/api/v1/attachments`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchEntityAttachments(params: EntityAttachmentSearchParams = {}): Observable<PagedResult<EntityAttachmentDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.entityName) httpParams = httpParams.set('entityName', params.entityName);
+    if (params.entityId != null) httpParams = httpParams.set('entityId', params.entityId);
+    if (params.attachmentId != null) httpParams = httpParams.set('attachmentId', params.attachmentId);
+    return this.http
+      .get<ApiResponse<PagedResult<EntityAttachmentDto>>>(`${this.base}/api/v1/entity-attachments`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  linkEntityAttachment(request: CreateEntityAttachmentRequest): Observable<EntityAttachmentDto> {
+    return this.http
+      .post<ApiResponse<EntityAttachmentDto>>(`${this.base}/api/v1/entity-attachments`, request)
       .pipe(map((r) => this.unwrap(r)));
   }
 

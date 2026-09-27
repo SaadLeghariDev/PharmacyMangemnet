@@ -37,6 +37,7 @@ export class ShellComponent {
     { path: '/reports', label: 'Reports', icon: 'RP' },
     { path: '/users', label: 'Users & Roles', icon: 'UR' },
     { path: '/branches', label: 'Branches', icon: 'BR' },
+    { path: '/hardware', label: 'Hardware', icon: 'HW' },
     { path: '/settings', label: 'Settings', icon: 'ST' },
   ];
 

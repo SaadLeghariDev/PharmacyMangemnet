@@ -9,6 +9,8 @@ Database-first pharmacy management platform.
 - **Phase 5** — Supplier payments / returns / ledger (API + Angular)
 - **Phase 6** — Price lists, product prices, tax profiles/rates, sale InvoiceTaxes (API + Angular)
 - **Phase 7** — Reorder rules, alert rules/alerts evaluate, notification templates/logs (API + Angular)
+- **Phase 8** — Users / Roles / Branches / Tenant & Branch settings / Reason codes / Audit logs
+- **Phase 9** — Hardware devices, print templates & barcode print jobs, attachment metadata (API + Angular)
 
 ## Structure
 
@@ -41,16 +43,16 @@ If you cloned under `F:\Pharmacymanagemnt` (or similar), point the API at Expres
 
 `Server=DESKTOP-H9TF8EF\SQLEXPRESS;Database=PharmacyManagement;Trusted_Connection=True;TrustServerCertificate=True;`
 
-## API (Phase 7+)
+## API (Phase 9)
 
 ```bash
 dotnet restore
 dotnet build
-dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5329
+dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5339
 ```
 
-- Swagger: http://127.0.0.1:5329/swagger  
-- Health: http://127.0.0.1:5329/health  
+- Swagger: http://127.0.0.1:5339/swagger  
+- Health: http://127.0.0.1:5339/health  
 - Connection string key: `ConnectionStrings:PharmacyManagement`  
 - CORS origins include Angular `http://127.0.0.1:43123` (see `Cors:AllowedOrigins`)
 
@@ -79,6 +81,11 @@ Seed user `admin` — in **Development**, password is `Admin@12345` (`AuthBootst
 | **Alert rules** | `/api/v1/alert-rules` | **ALERT.VIEW / ALERT.MANAGE** |
 | **Alerts** | `/api/v1/alerts`, `.../evaluate`, `.../acknowledge`, `.../resolve` | **ALERT.VIEW / ALERT.MANAGE** |
 | **Notification templates/logs** | `/api/v1/notification-templates`, `/api/v1/notification-logs` | **ALERT.VIEW / ALERT.MANAGE** |
+| **Users / Roles** | `/api/v1/users`, `/api/v1/roles`, `/api/v1/permissions` | **SEC.USERS / SEC.ROLES** |
+| **Settings / Reason codes / Audit** | `/api/v1/tenant-settings`, `/api/v1/branch-settings`, `/api/v1/reason-codes`, `/api/v1/audit-logs` | **ORG.VIEW / ORG.EDIT / SEC.USERS** |
+| **Devices / assignments / settings / events** | `/api/v1/device-types`, `/api/v1/devices`, `/api/v1/device-assignments` | **HW.VIEW / HW.MANAGE** |
+| **Print templates / barcode jobs** | `/api/v1/print-templates`, `/api/v1/barcode-print-jobs` | **PRINT.MANAGE** |
+| **Attachments** | `/api/v1/attachments`, `/api/v1/entity-attachments` | **HW.VIEW / HW.MANAGE** |
 | Rx / Controlled / Fiscal | `/api/v1/prescriptions`, `/api/v1/controlled-registers`, `/api/v1/fiscal/documents` | RX.*, CTRL.*, FISCAL.* |
 
 At most one `PriceLists.IsDefault` per tenant. Sale complete resolves unit price preferring the default price list, computes tax from product tax profiles + active rates (ignores client `TaxAmount`), writes `InvoiceTaxes`, and includes tax in server totals. Product prices are deactivated via `EffectiveTo` (no hard delete).
@@ -94,5 +101,5 @@ npm start
 ```
 
 - App: http://127.0.0.1:43123  
-- Talks to API at `http://127.0.0.1:5329` (`web/src/environments/environment.ts`)  
-- Working slices: **Login**, **app shell**, **POS / Sales**, **Expenses**, **Suppliers** (+ ledger), **Supplier payments**, **Purchase returns**, **Price lists**, **Product prices**, **Tax profiles**, **Reorder rules**, **Alerts**
+- Talks to API at `http://127.0.0.1:5339` (`web/src/environments/environment.ts` — update if using another port)  
+- Working slices: **Login**, **app shell**, **POS / Sales**, **Expenses**, **Suppliers** (+ ledger), **Supplier payments**, **Purchase returns**, **Price lists**, **Product prices**, **Tax profiles**, **Reorder rules**, **Alerts**, **Users & Roles**, **Branches**, **Settings**, **Hardware** (devices / print / attachments)

@@ -1,0 +1,198 @@
+<app-page-header
+  title="Hardware"
+  subtitle="Devices, print templates, barcode print jobs, and attachment metadata."
+>
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">
+    @if (tab === 'devices') { New device }
+    @else if (tab === 'templates') { New template }
+    @else if (tab === 'jobs') { Queue job }
+    @else { New attachment }
+  </app-button>
+</app-page-header>
+
+<div class="tabs">
+  <button type="button" class="tab" [class.active]="tab === 'devices'" (click)="setTab('devices')">Devices</button>
+  <button type="button" class="tab" [class.active]="tab === 'templates'" (click)="setTab('templates')">Print templates</button>
+  <button type="button" class="tab" [class.active]="tab === 'jobs'" (click)="setTab('jobs')">Print jobs</button>
+  <button type="button" class="tab" [class.active]="tab === 'attachments'" (click)="setTab('attachments')">Attachments</button>
+</div>
+
+<div class="toolbar" [class.toolbar-jobs]="tab === 'jobs'" [class.toolbar-simple]="tab === 'attachments' || tab === 'templates'">
+  @if (tab !== 'jobs') {
+    <app-input
+      label="Search"
+      [placeholder]="tab === 'attachments' ? 'File name or path…' : 'Name…'"
+      [(ngModel)]="search"
+      (keydown)="$event.key === 'Enter' && applyFilters()"
+    />
+  }
+  @if (tab === 'devices' || tab === 'jobs') {
+    <app-select label="Branch" [options]="branchOptions" [(ngModel)]="branchFilter" />
+  }
+  @if (tab === 'devices') {
+    <app-select label="Type" [options]="typeOptions" [(ngModel)]="typeFilter" />
+    <app-select label="Active" [options]="activeOptions" [(ngModel)]="activeFilter" />
+  }
+  @if (tab === 'templates') {
+    <app-select label="Active" [options]="activeOptions" [(ngModel)]="activeFilter" />
+  }
+  @if (tab === 'jobs') {
+    <app-select label="Status" [options]="jobStatusOptions" [(ngModel)]="statusFilter" />
+  }
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (tab === 'devices' && !devices().length) {
+  <app-empty-state title="No devices" message="Register printers, scanners, and other branch hardware." actionLabel="New device" (action)="openCreate()" />
+} @else if (tab === 'templates' && !templates().length) {
+  <app-empty-state title="No print templates" message="Create barcode or receipt templates before queueing jobs." actionLabel="New template" (action)="openCreate()" />
+} @else if (tab === 'jobs' && !jobs().length) {
+  <app-empty-state title="No print jobs" message="Queue a barcode label job — completion is simulated without a printer driver." actionLabel="Queue job" (action)="openCreate()" />
+} @else if (tab === 'attachments' && !attachments().length) {
+  <app-empty-state title="No attachments" message="Store file path, URL, or stub metadata (no blob column)." actionLabel="New attachment" (action)="openCreate()" />
+} @else if (tab === 'devices') {
+  <app-table [columns]="deviceColumns" [hasActions]="true" [page]="page()" [hasNext]="hasNext()" [totalCount]="totalCount()" [loading]="loading()" (pageChange)="load($event)">
+    @for (row of devices(); track row.id) {
+      <tr>
+        <td>
+          <div class="primary">{{ row.name }}</div>
+          <div class="muted">{{ row.manufacturer }} {{ row.model }}</div>
+        </td>
+        <td>{{ row.deviceTypeCode || '—' }}</td>
+        <td>{{ row.branchName || row.branchId }}</td>
+        <td>{{ row.connectionType || '—' }} <span class="muted">{{ row.ip || row.comPort }}</span></td>
+        <td><app-badge [tone]="row.isActive ? 'success' : 'neutral'">{{ row.isActive ? 'Active' : 'Inactive' }}</app-badge></td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openEditDevice(row)">Edit</app-button>
+        </td>
+      </tr>
+    }
+  </app-table>
+} @else if (tab === 'templates') {
+  <app-table [columns]="templateColumns" [hasActions]="true" [page]="page()" [hasNext]="hasNext()" [totalCount]="totalCount()" [loading]="loading()" (pageChange)="load($event)">
+    @for (row of templates(); track row.id) {
+      <tr>
+        <td class="primary">{{ row.name }}</td>
+        <td>{{ row.templateType }}</td>
+        <td>{{ row.paperWidth ?? '—' }}</td>
+        <td><app-badge [tone]="row.isActive ? 'success' : 'neutral'">{{ row.isActive ? 'Active' : 'Inactive' }}</app-badge></td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openEditTemplate(row)">Edit</app-button>
+        </td>
+      </tr>
+    }
+  </app-table>
+} @else if (tab === 'jobs') {
+  <app-table [columns]="jobColumns" [hasActions]="true" [page]="page()" [hasNext]="hasNext()" [totalCount]="totalCount()" [loading]="loading()" (pageChange)="load($event)">
+    @for (row of jobs(); track row.id) {
+      <tr>
+        <td>#{{ row.id }}</td>
+        <td>
+          <div class="primary">{{ row.productSku || row.productId }}</div>
+          <div class="muted">{{ row.productName }}</div>
+        </td>
+        <td>{{ row.printerDeviceName || row.printerDeviceId }}</td>
+        <td>{{ row.quantity }}</td>
+        <td><app-badge [tone]="statusTone(row.status)">{{ row.status }}</app-badge></td>
+        <td>{{ row.createdAt | date: 'short' }}</td>
+        <td class="actions">
+          @if (row.status === 'Queued' || row.status === 'Printing') {
+            <app-button variant="ghost" size="sm" (clicked)="simulateJob(row)">Simulate</app-button>
+            <app-button variant="ghost" size="sm" (clicked)="simulateJob(row, true)">Fail</app-button>
+          }
+        </td>
+      </tr>
+    }
+  </app-table>
+} @else {
+  <app-table [columns]="attachmentColumns" [hasActions]="true" [page]="page()" [hasNext]="hasNext()" [totalCount]="totalCount()" [loading]="loading()" (pageChange)="load($event)">
+    @for (row of attachments(); track row.id) {
+      <tr>
+        <td>
+          <div class="primary">{{ row.fileName }}</div>
+          <div class="muted">{{ row.contentType }}</div>
+        </td>
+        <td class="mono">{{ row.storagePath }}</td>
+        <td>{{ row.fileSize }}</td>
+        <td>{{ row.createdAt | date: 'short' }}</td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openLink(row)">Link</app-button>
+        </td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal [open]="modalOpen" [title]="modalTitle" (closed)="modalOpen = false">
+  @if (tab === 'devices') {
+    <div class="form-grid">
+      <app-select label="Branch" [options]="branchPickOptions" [(ngModel)]="deviceForm.branchId" />
+      <app-select label="Device type" [options]="typePickOptions" [(ngModel)]="deviceForm.deviceTypeId" />
+      <app-input label="Name" [(ngModel)]="deviceForm.name" />
+      <app-input label="Connection" placeholder="USB / Network / COM" [(ngModel)]="deviceForm.connectionType" />
+      <app-input label="Manufacturer" [(ngModel)]="deviceForm.manufacturer" />
+      <app-input label="Model" [(ngModel)]="deviceForm.model" />
+      <app-input label="Serial" [(ngModel)]="deviceForm.serialNumber" />
+      <app-input label="IP" [(ngModel)]="deviceForm.ip" />
+      <app-input label="COM port" [(ngModel)]="deviceForm.comPort" />
+      <label class="check"><input type="checkbox" [(ngModel)]="deviceForm.isDefault" /> Default</label>
+      <label class="check"><input type="checkbox" [(ngModel)]="deviceForm.isActive" /> Active</label>
+    </div>
+  } @else if (tab === 'templates') {
+    <div class="form-grid">
+      <app-select label="Type" [options]="templateTypeOptions" [(ngModel)]="templateForm.templateType" />
+      <app-input label="Name" [(ngModel)]="templateForm.name" />
+      <app-input label="Paper width" type="number" [(ngModel)]="templateForm.paperWidth" />
+      <label class="full">
+        <span class="lbl">Template content</span>
+        <textarea rows="6" [(ngModel)]="templateForm.templateContent"></textarea>
+      </label>
+      <label class="check"><input type="checkbox" [(ngModel)]="templateForm.isDefault" /> Default</label>
+      <label class="check"><input type="checkbox" [(ngModel)]="templateForm.isActive" /> Active</label>
+    </div>
+  } @else if (tab === 'jobs') {
+    <div class="form-grid">
+      <app-select label="Branch" [options]="branchPickOptions" [(ngModel)]="jobForm.branchId" (ngModelChange)="refreshJobLookups()" />
+      <app-select label="Printer device" [options]="deviceOptions" [(ngModel)]="jobForm.printerDeviceId" />
+      <app-select label="Template" [options]="templateOptions" [(ngModel)]="jobForm.templateId" />
+      <app-input label="Product search" [(ngModel)]="jobForm.productSearch" (ngModelChange)="productSearch($event)" />
+      <app-select label="Product" [options]="productOptions" [(ngModel)]="jobForm.productId" />
+      <app-input label="Quantity" type="number" [(ngModel)]="jobForm.quantity" />
+    </div>
+  } @else {
+    <div class="form-grid">
+      <app-input label="File name" [(ngModel)]="attachmentForm.fileName" />
+      <app-input label="Storage path / URL / stub" [(ngModel)]="attachmentForm.storagePath" />
+      <app-input label="Content type" [(ngModel)]="attachmentForm.contentType" />
+      <app-input label="File size" type="number" [(ngModel)]="attachmentForm.fileSize" />
+      <app-input label="Hash (optional)" [(ngModel)]="attachmentForm.hash" />
+    </div>
+  }
+  <div class="modal-actions">
+    <app-button variant="ghost" (clicked)="modalOpen = false" [disabled]="saving">Cancel</app-button>
+    <app-button variant="primary" (clicked)="save()" [loading]="saving">Save</app-button>
+  </div>
+</app-modal>
+
+<app-modal [open]="linkModalOpen" title="Link attachment to entity" (closed)="linkModalOpen = false">
+  <div class="form-grid">
+    <app-input label="Entity name" placeholder="Product, Prescription…" [(ngModel)]="linkForm.entityName" />
+    <app-input label="Entity id" type="number" [(ngModel)]="linkForm.entityId" />
+  </div>
+  <div class="modal-actions">
+    <app-button variant="ghost" (clicked)="linkModalOpen = false" [disabled]="saving">Cancel</app-button>
+    <app-button variant="primary" (clicked)="saveLink()" [loading]="saving">Link</app-button>
+  </div>
+</app-modal>

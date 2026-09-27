@@ -946,3 +946,252 @@ export interface EvaluateAlertsResultDto {
   notificationLogsCreated: number;
   createdAlerts: AlertDto[];
 }
+
+export interface DeviceTypeDto {
+  id: number;
+  code: string;
+  name: string;
+}
+
+export interface DeviceDto {
+  id: number;
+  branchId: number;
+  branchName?: string | null;
+  counterId?: number | null;
+  deviceTypeId: number;
+  deviceTypeCode?: string | null;
+  deviceTypeName?: string | null;
+  name: string;
+  manufacturer?: string | null;
+  model?: string | null;
+  serialNumber?: string | null;
+  connectionType?: string | null;
+  ip?: string | null;
+  port?: number | null;
+  comPort?: string | null;
+  macAddress?: string | null;
+  driverName?: string | null;
+  driverVersion?: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  lastSeenAt?: string | null;
+}
+
+export interface DeviceSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  branchId?: number | null;
+  deviceTypeId?: number | null;
+  isActive?: boolean | null;
+}
+
+export interface CreateDeviceRequest {
+  branchId: number;
+  counterId?: number | null;
+  deviceTypeId: number;
+  name: string;
+  manufacturer?: string | null;
+  model?: string | null;
+  serialNumber?: string | null;
+  connectionType?: string | null;
+  ip?: string | null;
+  port?: number | null;
+  comPort?: string | null;
+  macAddress?: string | null;
+  driverName?: string | null;
+  driverVersion?: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+export interface UpdateDeviceRequest {
+  counterId?: number | null;
+  deviceTypeId: number;
+  name: string;
+  manufacturer?: string | null;
+  model?: string | null;
+  serialNumber?: string | null;
+  connectionType?: string | null;
+  ip?: string | null;
+  port?: number | null;
+  comPort?: string | null;
+  macAddress?: string | null;
+  driverName?: string | null;
+  driverVersion?: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  lastSeenAt?: string | null;
+}
+
+export interface DeviceAssignmentDto {
+  id: number;
+  deviceId: number;
+  deviceName?: string | null;
+  terminalId: number;
+  terminalCode?: string | null;
+  assignedFrom: string;
+  assignedTo?: string | null;
+  isActive: boolean;
+}
+
+export interface CreateDeviceAssignmentRequest {
+  deviceId: number;
+  terminalId: number;
+  assignedFrom?: string | null;
+}
+
+export interface DeviceSettingDto {
+  id: number;
+  deviceId: number;
+  settingKey: string;
+  settingValue?: string | null;
+  isEncrypted: boolean;
+}
+
+export interface UpsertDeviceSettingRequest {
+  settingKey: string;
+  settingValue?: string | null;
+  isEncrypted: boolean;
+}
+
+export interface DeviceEventDto {
+  id: number;
+  deviceId: number;
+  eventType: string;
+  payload?: string | null;
+  status: string;
+  errorMessage?: string | null;
+  createdAt: string;
+}
+
+export interface CreateDeviceEventRequest {
+  eventType: string;
+  payload?: string | null;
+  status: string;
+  errorMessage?: string | null;
+}
+
+export interface PrintTemplateDto {
+  id: number;
+  tenantId: number;
+  templateType: string;
+  name: string;
+  templateContent: string;
+  paperWidth?: number | null;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+export interface PrintTemplateSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  templateType?: string | null;
+  isActive?: boolean | null;
+}
+
+export interface CreatePrintTemplateRequest {
+  templateType: string;
+  name: string;
+  templateContent: string;
+  paperWidth?: number | null;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+export interface UpdatePrintTemplateRequest {
+  templateType: string;
+  name: string;
+  templateContent: string;
+  paperWidth?: number | null;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+export interface BarcodePrintJobDto {
+  id: number;
+  branchId: number;
+  branchName?: string | null;
+  printerDeviceId: number;
+  printerDeviceName?: string | null;
+  productId: number;
+  productSku?: string | null;
+  productName?: string | null;
+  batchId?: number | null;
+  quantity: number;
+  templateId: number;
+  templateName?: string | null;
+  status: string;
+  createdBy?: number | null;
+  createdAt: string;
+  printedAt?: string | null;
+}
+
+export interface BarcodePrintJobSearchParams {
+  page?: number;
+  pageSize?: number;
+  branchId?: number | null;
+  status?: string | null;
+  productId?: number | null;
+}
+
+export interface CreateBarcodePrintJobRequest {
+  branchId: number;
+  printerDeviceId: number;
+  productId: number;
+  batchId?: number | null;
+  quantity: number;
+  templateId: number;
+}
+
+export interface UpdateBarcodePrintJobStatusRequest {
+  status: string;
+}
+
+export interface SimulateBarcodePrintJobRequest {
+  fail?: boolean;
+}
+
+export interface AttachmentDto {
+  id: number;
+  tenantId: number;
+  fileName: string;
+  storagePath: string;
+  contentType?: string | null;
+  fileSize: number;
+  hash?: string | null;
+  createdAt: string;
+}
+
+export interface CreateAttachmentRequest {
+  fileName: string;
+  storagePath: string;
+  contentType?: string | null;
+  fileSize: number;
+  hash?: string | null;
+}
+
+export interface EntityAttachmentDto {
+  id: number;
+  attachmentId: number;
+  entityName: string;
+  entityId: number;
+  fileName?: string | null;
+  storagePath?: string | null;
+  contentType?: string | null;
+}
+
+export interface CreateEntityAttachmentRequest {
+  attachmentId: number;
+  entityName: string;
+  entityId: number;
+}
+
+export interface EntityAttachmentSearchParams {
+  page?: number;
+  pageSize?: number;
+  entityName?: string | null;
+  entityId?: number | null;
+  attachmentId?: number | null;
+}

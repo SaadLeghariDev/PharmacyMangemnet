@@ -33,6 +33,9 @@ public static class PermissionCodes
     public const string RxDispense = "RX.DISPENSE";
     public const string CtrlManage = "CTRL.MANAGE";
     public const string FiscalSubmit = "FISCAL.SUBMIT";
+    public const string HwView = "HW.VIEW";
+    public const string HwManage = "HW.MANAGE";
+    public const string PrintManage = "PRINT.MANAGE";
 }
 
 public static class DocumentTypes
@@ -130,6 +133,42 @@ public static class ReasonTypes
 
     public static string Normalize(string value) =>
         Known.First(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
+}
+
+public static class BarcodePrintJobStatuses
+{
+    public const string Queued = "Queued";
+    public const string Printing = "Printing";
+    public const string Printed = "Printed";
+    public const string Failed = "Failed";
+    public const string Cancelled = "Cancelled";
+
+    private static readonly HashSet<string> Known = new(StringComparer.OrdinalIgnoreCase)
+    {
+        Queued, Printing, Printed, Failed, Cancelled
+    };
+
+    public static bool IsKnown(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && Known.Contains(value);
+
+    public static string Normalize(string value) =>
+        Known.First(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
+}
+
+public static class DeviceEventStatuses
+{
+    /// <summary>No CHECK on DeviceEvents.Status — recommended values only.</summary>
+    public const string Ok = "Ok";
+    public const string Failed = "Failed";
+    public const string Info = "Info";
+}
+
+public static class PrintTemplateTypes
+{
+    /// <summary>No CHECK on PrintTemplates.TemplateType — recommended values.</summary>
+    public const string Barcode = "Barcode";
+    public const string Receipt = "Receipt";
+    public const string Label = "Label";
 }
 
 public static class AppClaimTypes

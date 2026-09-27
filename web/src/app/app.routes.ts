@@ -15,6 +15,7 @@ import { AlertsPageComponent } from './features/alerts/alerts-page.component';
 import { UsersPageComponent } from './features/users/users-page.component';
 import { BranchesPageComponent } from './features/branches/branches-page.component';
 import { SettingsPageComponent } from './features/settings/settings-page.component';
+import { HardwarePageComponent } from './features/hardware/hardware-page.component';
 import { ListPageComponent } from './features/stub/list-page.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { ShellComponent } from './layout/shell.component';
@@ -55,6 +56,7 @@ export const routes: Routes = [
       { path: 'reports', component: ListPageComponent, data: { title: 'Reports', kind: 'reports' } },
       { path: 'users', component: UsersPageComponent },
       { path: 'branches', component: BranchesPageComponent },
+      { path: 'hardware', component: HardwarePageComponent },
       { path: 'settings', component: SettingsPageComponent },
     ],
   },

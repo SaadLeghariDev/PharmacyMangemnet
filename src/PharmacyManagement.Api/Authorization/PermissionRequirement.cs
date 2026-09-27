@@ -59,6 +59,9 @@ public static class PermissionPolicies
             Add(PermissionCodes.RxDispense);
             Add(PermissionCodes.CtrlManage);
             Add(PermissionCodes.FiscalSubmit);
+            Add(PermissionCodes.HwView);
+            Add(PermissionCodes.HwManage);
+            Add(PermissionCodes.PrintManage);
         });
         return services;
     }

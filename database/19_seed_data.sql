@@ -80,6 +80,9 @@ INSERT INTO dbo.Permissions (Code, Name, Module, Description) VALUES
  (N'INV.REORDER', N'Manage Reorder Rules', N'Inventory', N'Create and update reorder thresholds and view low-stock candidates'),
  (N'ALERT.VIEW', N'View Alerts', N'Alerts', N'View alert rules, alerts, and notification templates/logs'),
  (N'ALERT.MANAGE', N'Manage Alerts', N'Alerts', N'Create alert rules, evaluate, acknowledge/resolve alerts, manage templates'),
+ (N'HW.VIEW', N'View Hardware', N'Hardware', N'View devices, assignments, settings, events, and attachments'),
+ (N'HW.MANAGE', N'Manage Hardware', N'Hardware', N'Manage devices, assignments, settings, events, and attachments'),
+ (N'PRINT.MANAGE', N'Manage Print', N'Hardware', N'Manage print templates and barcode print jobs'),
  (N'RPT.VIEW', N'View Reports', N'Reports', N'Access operational reports');
 GO
 
@@ -133,6 +136,17 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'ALERT.VIEW')
 IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'ALERT.MANAGE')
     INSERT INTO dbo.Permissions (Code, Name, Module, Description)
     VALUES (N'ALERT.MANAGE', N'Manage Alerts', N'Alerts', N'Create alert rules, evaluate, acknowledge/resolve alerts, manage templates');
+
+/* Idempotent add for Phase 9 hardware / print permissions */
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'HW.VIEW')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'HW.VIEW', N'View Hardware', N'Hardware', N'View devices, assignments, settings, events, and attachments');
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'HW.MANAGE')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'HW.MANAGE', N'Manage Hardware', N'Hardware', N'Manage devices, assignments, settings, events, and attachments');
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'PRINT.MANAGE')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'PRINT.MANAGE', N'Manage Print', N'Hardware', N'Manage print templates and barcode print jobs');
 GO
 
 

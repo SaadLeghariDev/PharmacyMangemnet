@@ -7,6 +7,7 @@ using PharmacyManagement.Application.DTOs.Controlled;
 using PharmacyManagement.Application.DTOs.Customers;
 using PharmacyManagement.Application.DTOs.Expenses;
 using PharmacyManagement.Application.DTOs.Fiscal;
+using PharmacyManagement.Application.DTOs.Hardware;
 using PharmacyManagement.Application.DTOs.Inventory;
 using PharmacyManagement.Application.DTOs.Organization;
 using PharmacyManagement.Application.DTOs.Prescriptions;
@@ -403,4 +404,48 @@ public interface IAuditLogService
 {
     Task<PagedResult<AuditLogDto>> SearchAsync(AuditLogQuery query, CancellationToken ct = default);
     Task<AuditLogDto?> GetByIdAsync(long id, CancellationToken ct = default);
+}
+
+public interface IDeviceService
+{
+    Task<PagedResult<DeviceTypeDto>> SearchDeviceTypesAsync(DeviceTypeQuery query, CancellationToken ct = default);
+
+    Task<PagedResult<DeviceDto>> SearchDevicesAsync(DeviceQuery query, CancellationToken ct = default);
+    Task<DeviceDto?> GetDeviceByIdAsync(long id, CancellationToken ct = default);
+    Task<DeviceDto> CreateDeviceAsync(CreateDeviceRequest request, CancellationToken ct = default);
+    Task<DeviceDto> UpdateDeviceAsync(long id, UpdateDeviceRequest request, CancellationToken ct = default);
+
+    Task<PagedResult<DeviceAssignmentDto>> SearchAssignmentsAsync(DeviceAssignmentQuery query, CancellationToken ct = default);
+    Task<DeviceAssignmentDto> CreateAssignmentAsync(CreateDeviceAssignmentRequest request, CancellationToken ct = default);
+    Task<DeviceAssignmentDto> EndAssignmentAsync(long id, CancellationToken ct = default);
+
+    Task<IReadOnlyList<DeviceSettingDto>> GetSettingsAsync(long deviceId, string? key, CancellationToken ct = default);
+    Task<DeviceSettingDto> UpsertSettingAsync(long deviceId, UpsertDeviceSettingRequest request, CancellationToken ct = default);
+
+    Task<PagedResult<DeviceEventDto>> SearchEventsAsync(long deviceId, DeviceEventQuery query, CancellationToken ct = default);
+    Task<DeviceEventDto> AppendEventAsync(long deviceId, CreateDeviceEventRequest request, CancellationToken ct = default);
+}
+
+public interface IPrintService
+{
+    Task<PagedResult<PrintTemplateDto>> SearchTemplatesAsync(PrintTemplateQuery query, CancellationToken ct = default);
+    Task<PrintTemplateDto?> GetTemplateByIdAsync(long id, CancellationToken ct = default);
+    Task<PrintTemplateDto> CreateTemplateAsync(CreatePrintTemplateRequest request, CancellationToken ct = default);
+    Task<PrintTemplateDto> UpdateTemplateAsync(long id, UpdatePrintTemplateRequest request, CancellationToken ct = default);
+
+    Task<PagedResult<BarcodePrintJobDto>> SearchJobsAsync(BarcodePrintJobQuery query, CancellationToken ct = default);
+    Task<BarcodePrintJobDto?> GetJobByIdAsync(long id, CancellationToken ct = default);
+    Task<BarcodePrintJobDto> CreateJobAsync(CreateBarcodePrintJobRequest request, CancellationToken ct = default);
+    Task<BarcodePrintJobDto> UpdateJobStatusAsync(long id, UpdateBarcodePrintJobStatusRequest request, CancellationToken ct = default);
+    Task<BarcodePrintJobDto> SimulateCompleteAsync(long id, SimulateBarcodePrintJobRequest request, CancellationToken ct = default);
+}
+
+public interface IAttachmentService
+{
+    Task<PagedResult<AttachmentDto>> SearchAsync(AttachmentQuery query, CancellationToken ct = default);
+    Task<AttachmentDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<AttachmentDto> CreateAsync(CreateAttachmentRequest request, CancellationToken ct = default);
+
+    Task<PagedResult<EntityAttachmentDto>> SearchLinksAsync(EntityAttachmentQuery query, CancellationToken ct = default);
+    Task<EntityAttachmentDto> LinkAsync(CreateEntityAttachmentRequest request, CancellationToken ct = default);
 }
