@@ -29,6 +29,8 @@ public sealed class ProductDto
     public bool IsReturnable { get; set; }
     public bool IsSaleable { get; set; }
     public bool IsActive { get; set; }
+    /// <summary>Preferred sale unit for POS (base sale unit when present).</summary>
+    public long? DefaultSaleUnitId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

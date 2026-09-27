@@ -1,0 +1,35 @@
+<div class="shell">
+  <aside class="sidebar" aria-label="Main navigation">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">P</span>
+      <div>
+        <strong>Pharmacy MS</strong>
+        <small>Counter &amp; inventory</small>
+      </div>
+    </div>
+    <nav>
+      @for (item of nav; track item.path) {
+        <a [routerLink]="item.path" routerLinkActive="active">
+          <span class="icon" aria-hidden="true">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">
+        <span class="muted">Signed in as</span>
+        <strong>{{ auth.user()?.fullName || auth.user()?.username }}</strong>
+      </div>
+      <div class="top-actions">
+        <button type="button" class="signout" (click)="logout()">Sign out</button>
+      </div>
+    </header>
+    <div class="content">
+      <router-outlet />
+    </div>
+  </div>
+</div>
+<app-snackbar />

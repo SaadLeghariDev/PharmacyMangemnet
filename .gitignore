@@ -7,3 +7,6 @@ appsettings.*.local.json
 secrets.json
 .idea/
 *.DotSettings.user
+web/node_modules/
+web/dist/
+web/.angular/

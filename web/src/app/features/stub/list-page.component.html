@@ -1,0 +1,60 @@
+<app-page-header [title]="title()" [subtitle]="subtitle()">
+  <app-button variant="secondary" size="sm" (clicked)="load(page())" [disabled]="loading()"
+    >Refresh</app-button
+  >
+</app-page-header>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="Search…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  <app-select label="Status" [options]="statusOptions" [(ngModel)]="statusFilter" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear filters</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state
+    [title]="'No ' + title().toLowerCase() + ' found'"
+    message="Try a different search or clear filters. Full create/edit workflows ship in a later slice."
+    actionLabel="Clear filters"
+    (action)="clearFilters()"
+  />
+} @else {
+  <app-table
+    [columns]="columns()"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>{{ row.c1 }}</td>
+        <td>{{ row.c2 }}</td>
+        <td>{{ row.c3 }}</td>
+        <td>{{ row.c4 }}</td>
+        <td>{{ row.c5 }}</td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm">View</app-button>
+        </td>
+      </tr>
+    }
+  </app-table>
+}

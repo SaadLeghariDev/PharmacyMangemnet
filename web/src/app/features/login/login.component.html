@@ -1,0 +1,38 @@
+<section class="login-page">
+  <div class="login-card">
+    <div class="brand-block">
+      <span class="mark" aria-hidden="true">P</span>
+      <h1>Pharmacy MS</h1>
+    </div>
+    <p class="lede">Sign in to the counter and inventory workspace.</p>
+
+    <form class="form" (ngSubmit)="submit()" autocomplete="on">
+      <app-input
+        label="Username"
+        name="username"
+        autocomplete="username"
+        [(ngModel)]="username"
+        [required]="true"
+        [disabled]="busy()"
+        [error]="error() && !username ? 'Username is required.' : ''"
+      />
+      <app-input
+        label="Password"
+        type="password"
+        name="password"
+        autocomplete="current-password"
+        [(ngModel)]="password"
+        [required]="true"
+        [disabled]="busy()"
+      />
+
+      @if (error()) {
+        <p class="form-error" role="alert">{{ error() }}</p>
+      }
+
+      <app-button type="submit" [block]="true" [loading]="busy()">Sign in</app-button>
+    </form>
+
+    <p class="hint">Development seed: admin / Admin&#64;12345</p>
+  </div>
+</section>

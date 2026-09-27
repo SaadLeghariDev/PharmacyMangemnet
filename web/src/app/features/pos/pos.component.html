@@ -1,0 +1,258 @@
+<app-page-header
+  title="Sales / POS"
+  [subtitle]="
+    context()
+      ? context()!.branchName + ' · Terminal ' + context()!.terminalCode + ' · ' + context()!.warehouseName
+      : 'Loading terminal context…'
+  "
+>
+  <app-button variant="secondary" size="sm" (clicked)="refreshHolds()" [disabled]="!context()"
+    >Refresh holds</app-button
+  >
+  <app-button variant="secondary" size="sm" (clicked)="askClear()" [disabled]="!lines().length"
+    >Clear cart</app-button
+  >
+</app-page-header>
+
+@if (loadingContext()) {
+  <app-loading-state label="Loading branch and terminal…" />
+} @else {
+  <div class="pos-layout">
+    <section class="cart-panel">
+      <div class="search-row">
+        <app-input
+          label="Barcode / search"
+          placeholder="Scan barcode or type name / SKU, then Enter"
+          [(ngModel)]="search"
+          (keydown)="onSearchKey($event)"
+          [disabled]="busy() || !context()"
+        />
+        <app-button
+          class="search-btn"
+          (clicked)="resolveSearch()"
+          [disabled]="busy() || !search.trim() || !context()"
+          [loading]="busy()"
+          >Add</app-button
+        >
+      </div>
+
+      @if (suggestions().length) {
+        <ul class="suggestions">
+          @for (p of suggestions(); track p.id) {
+            <li>
+              <button type="button" (click)="pickSuggestion(p)">
+                <span>
+                  <strong>{{ p.name }}</strong>
+                  <small>{{ p.sku }}@if (p.genericName) { · {{ p.genericName }} }</small>
+                </span>
+                <app-badge tone="primary">Add</app-badge>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (!lines().length) {
+        <app-empty-state
+          title="Cart is empty"
+          message="Scan a barcode or search a medicine to start the sale."
+        />
+      } @else {
+        <div class="table-wrap">
+          <table class="cart-table">
+            <thead>
+              <tr>
+                <th>Medicine</th>
+                <th>Batch</th>
+                <th>Expiry</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Discount</th>
+                <th>Subtotal</th>
+                <th>Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (line of lines(); track line.productId + '-' + line.productUnitId) {
+                <tr>
+                  <td>
+                    <strong>{{ line.productName }}</strong>
+                    <small>{{ line.sku }}</small>
+                  </td>
+                  <td>{{ line.batchNumber || 'FEFO' }}</td>
+                  <td>{{ line.expiryDate || '—' }}</td>
+                  <td>
+                    <input
+                      class="num"
+                      type="number"
+                      min="0.001"
+                      step="1"
+                      [ngModel]="line.quantity"
+                      (ngModelChange)="updateQty(line, $event)"
+                    />
+                  </td>
+                  <td>{{ line.unitPrice | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+                  <td>
+                    <input
+                      class="num"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      [ngModel]="line.discountAmount"
+                      (ngModelChange)="updateDiscount(line, $event)"
+                    />
+                  </td>
+                  <td>{{ line.quantity * line.unitPrice | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+                  <td>{{ lineTotal(line) | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+                  <td>
+                    <app-button variant="ghost" size="sm" (clicked)="askRemove(line)">Remove</app-button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <aside class="checkout-panel">
+      <div class="payable-card">
+        <span class="label">Payable</span>
+        <p class="amount">{{ payable() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</p>
+        <dl class="breakdown">
+          <div>
+            <dt>Subtotal</dt>
+            <dd>{{ subtotal() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+          </div>
+          <div>
+            <dt>Discount</dt>
+            <dd>{{ discountTotal() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+          </div>
+          <div>
+            <dt>Tax</dt>
+            <dd>{{ taxTotal() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <app-select
+        label="Payment method"
+        [options]="paymentOptions"
+        [(ngModel)]="paymentMethodId"
+      />
+      <app-input
+        label="Amount tendered"
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Leave blank for exact"
+        [(ngModel)]="tendered"
+        [disabled]="!lines().length"
+      />
+      @if (changePreview() !== null) {
+        <p class="change">Change: {{ changePreview() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</p>
+      }
+
+      <div class="actions">
+        <app-button
+          [block]="true"
+          [loading]="busy()"
+          [disabled]="!lines().length || !context()"
+          (clicked)="completeSale()"
+          >Complete sale</app-button
+        >
+        <app-button
+          variant="secondary"
+          [block]="true"
+          [disabled]="busy() || !lines().length || !context()"
+          (clicked)="holdCart()"
+          >Hold cart</app-button
+        >
+      </div>
+
+      <div class="holds">
+        <div class="holds-head">
+          <h2>Held carts</h2>
+        </div>
+        @if (!heldSales().length) {
+          <p class="muted">No open holds on this terminal.</p>
+        } @else {
+          <ul>
+            @for (h of heldSales(); track h.id) {
+              <li>
+                <div>
+                  <strong>#{{ h.id }}</strong>
+                  <small
+                    >{{ h.heldAt | date: 'short' }} ·
+                    {{ h.totalAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</small
+                  >
+                </div>
+                <div class="hold-actions">
+                  <app-button variant="ghost" size="sm" (clicked)="resumeHold(h)">Resume</app-button>
+                  <app-button variant="ghost" size="sm" (clicked)="discardHold(h)">Discard</app-button>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      @if (receipt(); as r) {
+        <div class="receipt">
+          <div class="receipt-head">
+            <h2>Receipt</h2>
+            <app-badge tone="success">{{ r.sale.status }}</app-badge>
+          </div>
+          <p class="invoice">{{ r.sale.invoiceNumber }}</p>
+          <dl>
+            <div>
+              <dt>Net</dt>
+              <dd>{{ r.sale.netAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+            </div>
+            <div>
+              <dt>Paid</dt>
+              <dd>{{ r.sale.paidAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+            </div>
+            <div>
+              <dt>Change</dt>
+              <dd>{{ r.sale.changeAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+            </div>
+            <div>
+              <dt>Cashier</dt>
+              <dd>{{ r.cashierName || '—' }}</dd>
+            </div>
+          </dl>
+          <ul>
+            @for (line of r.sale.lines; track line.id) {
+              <li>
+                <span>{{ line.productName }} × {{ line.quantity }}</span>
+                <span>{{ line.netAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </aside>
+  </div>
+}
+
+<app-confirm-dialog
+  [open]="!!confirmRemove()"
+  title="Remove item"
+  message="Remove this medicine from the cart?"
+  confirmLabel="Remove"
+  [danger]="true"
+  (confirmed)="confirmRemoveLine()"
+  (cancelled)="confirmRemove.set(null)"
+/>
+
+<app-confirm-dialog
+  [open]="confirmClear()"
+  title="Clear cart"
+  message="Clear all lines from the current cart?"
+  confirmLabel="Clear"
+  [danger]="true"
+  (confirmed)="doClear()"
+  (cancelled)="confirmClear.set(false)"
+/>

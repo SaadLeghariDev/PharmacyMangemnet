@@ -21,6 +21,7 @@ public sealed class ProductService(PharmacyManagementDbContext db, ICurrentUserS
             .Include(p => p.Manufacturer)
             .Include(p => p.Brand)
             .Include(p => p.TherapeuticClass)
+            .Include(p => p.ProductUnits)
             .Where(p => p.TenantId == tenantId);
 
         if (query.CategoryId is long catId)
@@ -176,7 +177,8 @@ public sealed class ProductService(PharmacyManagementDbContext db, ICurrentUserS
             .Include(p => p.Category)
             .Include(p => p.Manufacturer)
             .Include(p => p.Brand)
-            .Include(p => p.TherapeuticClass);
+            .Include(p => p.TherapeuticClass)
+            .Include(p => p.ProductUnits);
 
     private async Task EnsureFkAsync(long categoryId, long manufacturerId, long brandId, long therapeuticClassId, CancellationToken ct)
     {
@@ -193,34 +195,45 @@ public sealed class ProductService(PharmacyManagementDbContext db, ICurrentUserS
             throw new ValidationAppException(errors);
     }
 
-    private static ProductDto Map(Product p) => new()
+    private static ProductDto Map(Product p)
     {
-        Id = p.Id,
-        TenantId = p.TenantId,
-        CategoryId = p.CategoryId,
-        CategoryName = p.Category?.Name,
-        ManufacturerId = p.ManufacturerId,
-        ManufacturerName = p.Manufacturer?.Name,
-        BrandId = p.BrandId,
-        BrandName = p.Brand?.Name,
-        TherapeuticClassId = p.TherapeuticClassId,
-        TherapeuticClassName = p.TherapeuticClass?.Name,
-        Sku = p.Sku,
-        ProductCode = p.ProductCode,
-        Name = p.Name,
-        GenericName = p.GenericName,
-        Form = p.Form,
-        Strength = p.Strength,
-        StrengthUnit = p.StrengthUnit,
-        PackDescription = p.PackDescription,
-        PrescriptionRequired = p.PrescriptionRequired,
-        IsControlled = p.IsControlled,
-        IsTemperatureSensitive = p.IsTemperatureSensitive,
-        IsRefrigerated = p.IsRefrigerated,
-        IsReturnable = p.IsReturnable,
-        IsSaleable = p.IsSaleable,
-        IsActive = p.IsActive,
-        CreatedAt = p.CreatedAt,
-        UpdatedAt = p.UpdatedAt
-    };
+        var saleUnits = p.ProductUnits?
+            .Where(u => u.IsActive && (u.IsSaleUnit || u.IsBaseUnit))
+            .ToList() ?? [];
+        var defaultSaleUnit = saleUnits.FirstOrDefault(u => u.IsSaleUnit && u.IsBaseUnit)
+            ?? saleUnits.FirstOrDefault(u => u.IsSaleUnit)
+            ?? saleUnits.FirstOrDefault(u => u.IsBaseUnit);
+
+        return new ProductDto
+        {
+            Id = p.Id,
+            TenantId = p.TenantId,
+            CategoryId = p.CategoryId,
+            CategoryName = p.Category?.Name,
+            ManufacturerId = p.ManufacturerId,
+            ManufacturerName = p.Manufacturer?.Name,
+            BrandId = p.BrandId,
+            BrandName = p.Brand?.Name,
+            TherapeuticClassId = p.TherapeuticClassId,
+            TherapeuticClassName = p.TherapeuticClass?.Name,
+            Sku = p.Sku,
+            ProductCode = p.ProductCode,
+            Name = p.Name,
+            GenericName = p.GenericName,
+            Form = p.Form,
+            Strength = p.Strength,
+            StrengthUnit = p.StrengthUnit,
+            PackDescription = p.PackDescription,
+            PrescriptionRequired = p.PrescriptionRequired,
+            IsControlled = p.IsControlled,
+            IsTemperatureSensitive = p.IsTemperatureSensitive,
+            IsRefrigerated = p.IsRefrigerated,
+            IsReturnable = p.IsReturnable,
+            IsSaleable = p.IsSaleable,
+            IsActive = p.IsActive,
+            DefaultSaleUnitId = defaultSaleUnit?.Id,
+            CreatedAt = p.CreatedAt,
+            UpdatedAt = p.UpdatedAt
+        };
+    }
 }
