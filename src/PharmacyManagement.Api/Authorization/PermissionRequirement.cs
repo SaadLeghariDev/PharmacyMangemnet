@@ -34,6 +34,11 @@ public static class PermissionPolicies
             Add(PermissionCodes.SecRoles);
             Add(PermissionCodes.ProdView);
             Add(PermissionCodes.ProdEdit);
+            Add(PermissionCodes.InvView);
+            Add(PermissionCodes.InvAdjust);
+            Add(PermissionCodes.InvTransfer);
+            Add(PermissionCodes.ProcPo);
+            Add(PermissionCodes.ProcGrn);
         });
         return services;
     }

@@ -30,6 +30,14 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IOrganizationService, OrganizationService>();
         services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<INumberSequenceService, NumberSequenceService>();
+        services.AddScoped<ISupplierService, SupplierService>();
+        services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
+        services.AddScoped<IGoodsReceiptService, GoodsReceiptService>();
+        services.AddScoped<IInventoryQueryService, InventoryQueryService>();
+        services.AddScoped<IStockTransferService, StockTransferService>();
+        services.AddScoped<IStockAdjustmentService, StockAdjustmentService>();
+        services.AddScoped<IStockCountService, StockCountService>();
 
         return services;
     }

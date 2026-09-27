@@ -1,6 +1,6 @@
-using System.Net;
 using System.Text.Json;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using PharmacyManagement.Application.Common;
 using PharmacyManagement.Application.Exceptions;
 
@@ -31,6 +31,7 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
         {
             ValidationAppException vae => (vae.StatusCode, vae.Message, vae.Errors),
             ValidationException fve => (400, "Validation failed", fve.Errors.Select(e => e.ErrorMessage).Distinct().ToList()),
+            DbUpdateConcurrencyException => (409, "Concurrency conflict. Reload and retry.", (IReadOnlyList<string>?)null),
             AppException ae => (ae.StatusCode, ae.Message, (IReadOnlyList<string>?)null),
             UnauthorizedAccessException => (401, "Unauthorized", null),
             _ => (500, "An unexpected error occurred.", null)

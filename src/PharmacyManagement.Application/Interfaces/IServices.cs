@@ -1,7 +1,9 @@
 using PharmacyManagement.Application.Common;
 using PharmacyManagement.Application.DTOs.Auth;
+using PharmacyManagement.Application.DTOs.Inventory;
 using PharmacyManagement.Application.DTOs.Organization;
 using PharmacyManagement.Application.DTOs.Products;
+using PharmacyManagement.Application.DTOs.Purchasing;
 
 namespace PharmacyManagement.Application.Interfaces;
 
@@ -65,4 +67,71 @@ public interface IProductService
     Task<ProductDto> CreateAsync(CreateProductRequest request, CancellationToken ct = default);
     Task<ProductDto> UpdateAsync(long id, UpdateProductRequest request, CancellationToken ct = default);
     Task DeactivateAsync(long id, CancellationToken ct = default);
+}
+
+public interface INumberSequenceService
+{
+    Task<string> AllocateNextAsync(
+        long tenantId,
+        string documentType,
+        long? branchId,
+        long? terminalId = null,
+        string? defaultPrefix = null,
+        CancellationToken ct = default);
+}
+
+public interface ISupplierService
+{
+    Task<PagedResult<SupplierDto>> SearchAsync(PaginationQuery query, CancellationToken ct = default);
+    Task<SupplierDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<SupplierDto> CreateAsync(CreateSupplierRequest request, CancellationToken ct = default);
+    Task<SupplierDto> UpdateAsync(long id, UpdateSupplierRequest request, CancellationToken ct = default);
+    Task DeactivateAsync(long id, CancellationToken ct = default);
+}
+
+public interface IPurchaseOrderService
+{
+    Task<PagedResult<PurchaseOrderDto>> SearchAsync(PurchaseOrderQuery query, CancellationToken ct = default);
+    Task<PurchaseOrderDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<PurchaseOrderDto> CreateAsync(CreatePurchaseOrderRequest request, CancellationToken ct = default);
+    Task<PurchaseOrderDto> UpdateAsync(long id, UpdatePurchaseOrderRequest request, CancellationToken ct = default);
+    Task<PurchaseOrderDto> SubmitAsync(long id, CancellationToken ct = default);
+    Task<PurchaseOrderDto> ApproveAsync(long id, CancellationToken ct = default);
+}
+
+public interface IGoodsReceiptService
+{
+    Task<PagedResult<GoodsReceiptDto>> SearchAsync(GoodsReceiptQuery query, CancellationToken ct = default);
+    Task<GoodsReceiptDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<GoodsReceiptDto> CreateDraftAsync(CreateGoodsReceiptRequest request, CancellationToken ct = default);
+    Task<GoodsReceiptDto> PostAsync(long id, CancellationToken ct = default);
+}
+
+public interface IInventoryQueryService
+{
+    Task<PagedResult<StockBalanceDto>> GetStockAsync(StockQuery query, CancellationToken ct = default);
+    Task<IReadOnlyList<FefoCandidateDto>> GetFefoCandidatesAsync(FefoQuery query, CancellationToken ct = default);
+    Task<PagedResult<StockBalanceDto>> GetNearExpiryAsync(NearExpiryQuery query, CancellationToken ct = default);
+}
+
+public interface IStockTransferService
+{
+    Task<StockTransferDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<StockTransferDto> CreateAsync(CreateStockTransferRequest request, CancellationToken ct = default);
+    Task<StockTransferDto> CompleteAsync(long id, CancellationToken ct = default);
+}
+
+public interface IStockAdjustmentService
+{
+    Task<StockAdjustmentDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<StockAdjustmentDto> CreateAsync(CreateStockAdjustmentRequest request, CancellationToken ct = default);
+    Task<StockAdjustmentDto> ApproveAsync(long id, CancellationToken ct = default);
+    Task<StockAdjustmentDto> PostAsync(long id, CancellationToken ct = default);
+}
+
+public interface IStockCountService
+{
+    Task<StockCountDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<StockCountDto> CreateAsync(CreateStockCountRequest request, CancellationToken ct = default);
+    Task<StockCountDto> CompleteAsync(long id, CancellationToken ct = default);
 }
