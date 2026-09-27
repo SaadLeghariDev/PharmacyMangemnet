@@ -15,6 +15,14 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
 
     public async Task InvokeAsync(HttpContext context)
     {
+        // Let Swagger / OpenAPI schema generation surface raw errors instead of
+        // ApiResponse JSON (Swagger UI rejects that as "no valid version field").
+        if (context.Request.Path.StartsWithSegments("/swagger"))
+        {
+            await next(context);
+            return;
+        }
+
         try
         {
             await next(context);

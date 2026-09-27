@@ -52,13 +52,32 @@ If you cloned under `F:\Pharmacymanagemnt` (or similar), point the API at Expres
 ```bash
 dotnet restore
 dotnet build
-dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5342
+dotnet run --project src/PharmacyManagement.Api --launch-profile PharmacyManagement.Api
 ```
 
-- Swagger: http://127.0.0.1:5342/swagger  
-- Health: http://127.0.0.1:5342/health  
+- Swagger: http://127.0.0.1:5288/swagger  
+- OpenAPI JSON: http://127.0.0.1:5288/swagger/v1/swagger.json (must include `"openapi"`)  
+- Health: http://127.0.0.1:5288/health  
 - Connection string key: `ConnectionStrings:PharmacyManagement`  
 - CORS origins include Angular `http://127.0.0.1:43123` (see `Cors:AllowedOrigins`)
+
+### Launch profiles
+
+| Profile | Use when | DB |
+|---------|----------|----|
+| `PharmacyManagement.Api` (default) | Docker SQL on `localhost,14333` | sa / `Your_strong_Password123` |
+| `LocalExpress` | Windows SQL Express (`DESKTOP-H9TF8EF\SQLEXPRESS`) | Trusted_Connection |
+
+```bash
+# Docker / default
+dotnet run --project src/PharmacyManagement.Api --launch-profile PharmacyManagement.Api
+
+# Local SQL Express (also loads optional appsettings.LocalExpress.json)
+dotnet run --project src/PharmacyManagement.Api --launch-profile LocalExpress
+```
+
+In Visual Studio / Rider, pick the **LocalExpress** profile, then open http://127.0.0.1:5288/swagger.
+If Swagger UI shows “Unable to render this definition / does not specify a valid version field”, curl `/swagger/v1/swagger.json` — it must start with `"openapi"`, not an `ApiResponse` error payload.
 
 ### Development login
 

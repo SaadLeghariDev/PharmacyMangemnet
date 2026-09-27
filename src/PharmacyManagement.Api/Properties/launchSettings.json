@@ -7,7 +7,20 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://127.0.0.1:5288",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ConnectionStrings__PharmacyManagement": "Server=localhost,14333;Database=PharmacyManagement;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;"
+      }
+    },
+    "LocalExpress": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://127.0.0.1:5288",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "UseLocalExpress": "true",
+        "ConnectionStrings__PharmacyManagement": "Server=DESKTOP-H9TF8EF\\SQLEXPRESS;Database=PharmacyManagement;Trusted_Connection=True;TrustServerCertificate=True;"
       }
     }
   }

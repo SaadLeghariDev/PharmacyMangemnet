@@ -18,6 +18,11 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    // Optional Local SQL Express overrides (file may be absent). Re-add env vars so
+    // launch profiles (Docker vs LocalExpress) still win over the JSON file.
+    builder.Configuration.AddJsonFile("appsettings.LocalExpress.json", optional: true, reloadOnChange: true);
+    builder.Configuration.AddEnvironmentVariables();
+
     builder.Host.UseSerilog((ctx, services, cfg) => cfg
         .ReadFrom.Configuration(ctx.Configuration)
         .ReadFrom.Services(services)
@@ -59,9 +64,16 @@ try
                 .AllowAnyMethod());
     });
 
-    var connectionString = builder.Configuration.GetConnectionString("PharmacyManagement")!;
-    builder.Services.AddHealthChecks()
-        .AddSqlServer(connectionString, name: "sqlserver");
+    var connectionString = builder.Configuration.GetConnectionString("PharmacyManagement");
+    var healthChecks = builder.Services.AddHealthChecks();
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        healthChecks.AddSqlServer(connectionString, name: "sqlserver");
+    }
+    else
+    {
+        Log.Warning("ConnectionStrings:PharmacyManagement is missing; SQL health check not registered");
+    }
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(c =>
@@ -72,6 +84,9 @@ try
             Version = "v1",
             Description = "Phase 2E — Auth, Org, Products, Purchasing, Inventory, Sales, Cash, Customers, Prescriptions, Controlled, Fiscal (Database-First)"
         });
+        // Avoid schemaId collisions (e.g. ApiResponse vs ApiResponse<T>, nested types).
+        c.CustomSchemaIds(type =>
+            (type.FullName ?? type.Name).Replace("+", ".", StringComparison.Ordinal));
         c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
             Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
@@ -95,14 +110,16 @@ try
 
     var app = builder.Build();
 
-    app.UseMiddleware<ExceptionHandlingMiddleware>();
-    app.UseSerilogRequestLogging();
-
+    // Serve OpenAPI before exception JSON wrapping so schema-gen failures
+    // are not turned into non-OpenAPI ApiResponse payloads for Swagger UI.
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Pharmacy Management API v1");
     });
+
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
+    app.UseSerilogRequestLogging();
 
     app.UseCors("DefaultCors");
     app.UseAuthentication();
