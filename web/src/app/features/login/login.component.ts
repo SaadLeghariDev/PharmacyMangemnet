@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
 import { AppButtonComponent, AppInputComponent } from '../../shared';
 
@@ -14,7 +15,8 @@ import { AppButtonComponent, AppInputComponent } from '../../shared';
 })
 export class LoginComponent {
   username = 'admin';
-  password = '';
+  /** Prefilled for local Development seed; clear before sharing screenshots of prod-like envs. */
+  password = environment.production ? '' : 'Admin@12345';
   readonly busy = signal(false);
   readonly error = signal('');
 
@@ -24,6 +26,7 @@ export class LoginComponent {
   ) {}
 
   submit(): void {
+    if (this.busy()) return;
     this.error.set('');
     if (!this.username.trim() || !this.password) {
       this.error.set('Username and password are required.');
@@ -33,7 +36,7 @@ export class LoginComponent {
     this.auth.login({ username: this.username.trim(), password: this.password }).subscribe({
       next: () => {
         this.busy.set(false);
-        void this.router.navigate(['/pos']);
+        void this.router.navigate(['/dashboard']);
       },
       error: (err: unknown) => {
         this.busy.set(false);

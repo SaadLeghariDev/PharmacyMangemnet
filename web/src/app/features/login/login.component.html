@@ -24,13 +24,17 @@
         [(ngModel)]="password"
         [required]="true"
         [disabled]="busy()"
+        (keydown)="$event.key === 'Enter' && submit()"
       />
 
       @if (error()) {
         <p class="form-error" role="alert">{{ error() }}</p>
       }
 
-      <app-button type="submit" [block]="true" [loading]="busy()">Sign in</app-button>
+      <!-- type=button + clicked: reliable for automation; ngSubmit still covers Enter -->
+      <app-button type="button" [block]="true" [loading]="busy()" [disabled]="busy()" (clicked)="submit()">
+        Sign in
+      </app-button>
     </form>
 
     <p class="hint">Development seed: admin / Admin&#64;12345</p>
