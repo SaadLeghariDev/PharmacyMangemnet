@@ -1,0 +1,233 @@
+<app-page-header
+  title="Offline sync"
+  subtitle="Register terminal nodes, push and pull sync batches, and review idempotency keys."
+>
+  @if (tab === 'nodes') {
+    <app-button variant="primary" size="sm" (clicked)="openRegister()">Register node</app-button>
+  } @else if (tab === 'batches') {
+    <app-button variant="primary" size="sm" (clicked)="openPush()">Push batch</app-button>
+  }
+</app-page-header>
+
+<div class="tabs">
+  <button type="button" class="tab" [class.active]="tab === 'nodes'" (click)="setTab('nodes')">Nodes</button>
+  <button type="button" class="tab" [class.active]="tab === 'batches'" (click)="setTab('batches')">Batches</button>
+  <button type="button" class="tab" [class.active]="tab === 'keys'" (click)="setTab('keys')">Idempotency keys</button>
+</div>
+
+<div class="toolbar" [class.toolbar-batches]="tab === 'batches'" [class.toolbar-keys]="tab === 'keys'">
+  <app-input
+    label="Search"
+    [placeholder]="tab === 'nodes' ? 'Node or terminal…' : tab === 'batches' ? 'Batch or node…' : 'Key or entity…'"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  @if (tab === 'nodes') {
+    <app-select label="Branch" [options]="branchOptions" [(ngModel)]="branchFilter" />
+    <app-select label="Active" [options]="activeOptions" [(ngModel)]="activeFilter" />
+  } @else if (tab === 'batches') {
+    <app-select label="Node" [options]="nodeOptions" [(ngModel)]="nodeFilter" />
+    <app-select label="Status" [options]="batchStatusOptions" [(ngModel)]="statusFilter" />
+  } @else {
+    <app-input label="Entity type" placeholder="Sale" [(ngModel)]="entityTypeFilter" />
+  }
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (tab === 'nodes' && !nodes().length) {
+  <app-empty-state
+    title="No sync nodes"
+    message="Register a POS terminal as a sync node to push and pull offline changes."
+    actionLabel="Register node"
+    (action)="openRegister()"
+  />
+} @else if (tab === 'batches' && !batches().length) {
+  <app-empty-state
+    title="No sync batches"
+    message="Push a batch from a registered node, or pull changes from peer nodes."
+    actionLabel="Push batch"
+    (action)="openPush()"
+  />
+} @else if (tab === 'keys' && !keys().length) {
+  <app-empty-state
+    title="No idempotency keys"
+    message="Keys appear when POS sales (or other terminal writes) record an idempotency key."
+  />
+} @else if (tab === 'nodes') {
+  <app-table
+    [columns]="nodeColumns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of nodes(); track row.id) {
+      <tr>
+        <td class="mono">{{ row.nodeCode }}</td>
+        <td>{{ row.branchName || row.branchId }}</td>
+        <td>{{ row.terminalCode || row.terminalId }}</td>
+        <td class="mono">{{ row.lastSequence }}</td>
+        <td>{{ row.lastSyncAt ? (row.lastSyncAt | date: 'short') : '—' }}</td>
+        <td>
+          <app-badge [tone]="row.isActive ? 'success' : 'neutral'">
+            {{ row.isActive ? 'Active' : 'Inactive' }}
+          </app-badge>
+        </td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="pull(row)" [disabled]="!row.isActive">Pull</app-button>
+          <app-button variant="ghost" size="sm" (clicked)="toggleActive(row)">
+            {{ row.isActive ? 'Deactivate' : 'Activate' }}
+          </app-button>
+        </td>
+      </tr>
+    }
+  </app-table>
+} @else if (tab === 'batches') {
+  <app-table
+    [columns]="batchColumns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of batches(); track row.id) {
+      <tr>
+        <td class="mono">{{ row.batchNumber }}</td>
+        <td>{{ row.nodeCode || row.syncNodeId }}</td>
+        <td>{{ row.startedAt | date: 'short' }}</td>
+        <td>
+          <div class="primary">{{ row.itemCount }}</div>
+          <div class="muted">
+            {{ row.processedCount }} ok / {{ row.failedCount }} fail / {{ row.pendingCount }} pending
+          </div>
+        </td>
+        <td>
+          <app-badge [tone]="batchTone(row.status)">{{ row.status }}</app-badge>
+        </td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openBatchDetail(row)">Details</app-button>
+        </td>
+      </tr>
+    }
+  </app-table>
+} @else {
+  <app-table
+    [columns]="keyColumns"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of keys(); track row.id) {
+      <tr>
+        <td class="mono">{{ row.key }}</td>
+        <td>{{ row.terminalCode || row.terminalId }}</td>
+        <td>{{ row.entityType }}</td>
+        <td>{{ row.entityId ?? '—' }}</td>
+        <td>{{ row.createdAt | date: 'short' }}</td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal [open]="modalOpen" [title]="modalTitle" [size]="modalMode === 'detail' ? 'lg' : 'md'" [showFooter]="false" (closed)="modalOpen = false">
+  @if (modalMode === 'register') {
+    <div class="form-grid">
+      <app-select
+        label="Branch"
+        [options]="branchPickOptions"
+        [(ngModel)]="nodeForm.branchId"
+        (ngModelChange)="onBranchPicked()"
+      />
+      <app-select label="Terminal" [options]="terminalPickOptions" [(ngModel)]="nodeForm.terminalId" />
+      <app-input label="Node code" placeholder="NODE-T1" [(ngModel)]="nodeForm.nodeCode" />
+    </div>
+    <div class="modal-actions">
+      <app-button variant="ghost" (clicked)="modalOpen = false" [disabled]="saving">Cancel</app-button>
+      <app-button variant="primary" (clicked)="saveModal()" [loading]="saving">Register</app-button>
+    </div>
+  } @else if (modalMode === 'push') {
+    <div class="form-grid">
+      <app-select label="Node" [options]="nodePickOptions" [(ngModel)]="pushForm.syncNodeId" />
+      <app-input label="Entity name" [(ngModel)]="pushForm.entityName" />
+      <app-input label="Entity ID" type="number" [(ngModel)]="pushForm.entityId" />
+      <app-select label="Operation" [options]="operationOptions" [(ngModel)]="pushForm.operation" />
+      <app-input label="Version" type="number" [(ngModel)]="pushForm.version" />
+      <app-input label="Payload (JSON)" [(ngModel)]="pushForm.payload" />
+      <label class="check">
+        <input type="checkbox" [(ngModel)]="pushForm.simulateFailures" />
+        Simulate failures (batch Partial/Failed)
+      </label>
+    </div>
+    <div class="modal-actions">
+      <app-button variant="ghost" (clicked)="modalOpen = false" [disabled]="saving">Cancel</app-button>
+      <app-button variant="primary" (clicked)="saveModal()" [loading]="saving">Push</app-button>
+    </div>
+  } @else if (detailBatch) {
+    <div class="detail">
+      <div class="detail-meta">
+        <div><span class="muted">Node</span> {{ detailBatch.nodeCode }}</div>
+        <div>
+          <span class="muted">Status</span>
+          <app-badge [tone]="batchTone(detailBatch.status)">{{ detailBatch.status }}</app-badge>
+        </div>
+        <div><span class="muted">Started</span> {{ detailBatch.startedAt | date: 'short' }}</div>
+        <div>
+          <span class="muted">Completed</span>
+          {{ detailBatch.completedAt ? (detailBatch.completedAt | date: 'short') : '—' }}
+        </div>
+      </div>
+      @if (!detailBatch.items.length) {
+        <p class="muted">No items in this batch.</p>
+      } @else {
+        <table class="item-table">
+          <thead>
+            <tr>
+              <th>Entity</th>
+              <th>Op</th>
+              <th>Ver</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of detailBatch.items; track item.id) {
+              <tr>
+                <td>{{ item.entityName }} #{{ item.entityId }}</td>
+                <td>{{ item.operation }}</td>
+                <td class="mono">{{ item.version }}</td>
+                <td>
+                  <app-badge [tone]="itemTone(item.status)">{{ item.status }}</app-badge>
+                  @if (item.errorMessage) {
+                    <div class="muted">{{ item.errorMessage }}</div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+    <div class="modal-actions">
+      <app-button variant="primary" (clicked)="modalOpen = false">Close</app-button>
+    </div>
+  } @else {
+    <app-loading-state />
+  }
+</app-modal>

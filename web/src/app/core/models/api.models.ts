@@ -1295,3 +1295,116 @@ export interface CreateJournalEntryRequest {
   description?: string | null;
   lines: CreateJournalLineRequest[];
 }
+
+export interface SyncNodeDto {
+  id: number;
+  tenantId: number;
+  branchId: number;
+  branchName?: string | null;
+  terminalId: number;
+  terminalCode?: string | null;
+  nodeCode: string;
+  lastSyncAt?: string | null;
+  lastSequence: number;
+  isActive: boolean;
+}
+
+export interface SyncNodeSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  branchId?: number | null;
+  terminalId?: number | null;
+  isActive?: boolean | null;
+}
+
+export interface RegisterSyncNodeRequest {
+  branchId: number;
+  terminalId: number;
+  nodeCode: string;
+}
+
+export interface UpdateSyncNodeRequest {
+  isActive: boolean;
+}
+
+export interface SyncItemDto {
+  id: number;
+  syncBatchId: number;
+  entityName: string;
+  entityId: number;
+  operation: string;
+  payload?: string | null;
+  version: number;
+  processedAt?: string | null;
+  status: string;
+  errorMessage?: string | null;
+}
+
+export interface SyncBatchDto {
+  id: number;
+  syncNodeId: number;
+  nodeCode?: string | null;
+  batchNumber: string;
+  startedAt: string;
+  completedAt?: string | null;
+  status: string;
+  itemCount: number;
+  pendingCount: number;
+  processedCount: number;
+  failedCount: number;
+  skippedCount: number;
+  items: SyncItemDto[];
+}
+
+export interface SyncBatchSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  syncNodeId?: number | null;
+  status?: string | null;
+}
+
+export interface CreateSyncItemRequest {
+  entityName: string;
+  entityId: number;
+  operation: string;
+  payload?: string | null;
+  version: number;
+}
+
+export interface SyncPushRequest {
+  syncNodeId: number;
+  items: CreateSyncItemRequest[];
+  autoComplete?: boolean;
+  simulateFailures?: boolean;
+}
+
+export interface SyncPullRequest {
+  syncNodeId: number;
+  sinceSequence?: number | null;
+  limit?: number;
+}
+
+export interface SyncPushPullResultDto {
+  batch: SyncBatchDto;
+  node: SyncNodeDto;
+}
+
+export interface IdempotencyKeyDto {
+  id: number;
+  terminalId: number;
+  terminalCode?: string | null;
+  key: string;
+  entityType: string;
+  entityId?: number | null;
+  createdAt: string;
+}
+
+export interface IdempotencyKeySearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  terminalId?: number | null;
+  entityType?: string | null;
+}

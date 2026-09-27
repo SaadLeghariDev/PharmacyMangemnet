@@ -38,6 +38,8 @@ public static class PermissionCodes
     public const string HwView = "HW.VIEW";
     public const string HwManage = "HW.MANAGE";
     public const string PrintManage = "PRINT.MANAGE";
+    public const string SyncView = "SYNC.VIEW";
+    public const string SyncManage = "SYNC.MANAGE";
 }
 
 public static class DocumentTypes
@@ -190,6 +192,70 @@ public static class PrintTemplateTypes
     public const string Barcode = "Barcode";
     public const string Receipt = "Receipt";
     public const string Label = "Label";
+}
+
+public static class SyncBatchStatuses
+{
+    public const string InProgress = "InProgress";
+    public const string Completed = "Completed";
+    public const string Failed = "Failed";
+    public const string Partial = "Partial";
+
+    private static readonly HashSet<string> Known = new(StringComparer.OrdinalIgnoreCase)
+    {
+        InProgress, Completed, Failed, Partial
+    };
+
+    private static readonly HashSet<string> Terminal = new(StringComparer.OrdinalIgnoreCase)
+    {
+        Completed, Failed, Partial
+    };
+
+    public static bool IsKnown(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && Known.Contains(value);
+
+    public static bool IsTerminal(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && Terminal.Contains(value);
+
+    public static string Normalize(string value) =>
+        Known.First(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
+}
+
+public static class SyncItemStatuses
+{
+    public const string Pending = "Pending";
+    public const string Processed = "Processed";
+    public const string Failed = "Failed";
+    public const string Skipped = "Skipped";
+
+    private static readonly HashSet<string> Known = new(StringComparer.OrdinalIgnoreCase)
+    {
+        Pending, Processed, Failed, Skipped
+    };
+
+    public static bool IsKnown(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && Known.Contains(value);
+
+    public static string Normalize(string value) =>
+        Known.First(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
+}
+
+public static class SyncItemOperations
+{
+    public const string Insert = "Insert";
+    public const string Update = "Update";
+    public const string Delete = "Delete";
+
+    private static readonly HashSet<string> Known = new(StringComparer.OrdinalIgnoreCase)
+    {
+        Insert, Update, Delete
+    };
+
+    public static bool IsKnown(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && Known.Contains(value);
+
+    public static string Normalize(string value) =>
+        Known.First(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
 }
 
 public static class AppClaimTypes

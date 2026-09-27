@@ -17,6 +17,7 @@ import { BranchesPageComponent } from './features/branches/branches-page.compone
 import { SettingsPageComponent } from './features/settings/settings-page.component';
 import { HardwarePageComponent } from './features/hardware/hardware-page.component';
 import { FinancePageComponent } from './features/finance/finance-page.component';
+import { SyncPageComponent } from './features/sync/sync-page.component';
 import { ListPageComponent } from './features/stub/list-page.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { ShellComponent } from './layout/shell.component';
@@ -59,6 +60,7 @@ export const routes: Routes = [
       { path: 'users', component: UsersPageComponent },
       { path: 'branches', component: BranchesPageComponent },
       { path: 'hardware', component: HardwarePageComponent },
+      { path: 'sync', component: SyncPageComponent },
       { path: 'settings', component: SettingsPageComponent },
     ],
   },

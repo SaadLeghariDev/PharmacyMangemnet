@@ -84,6 +84,8 @@ INSERT INTO dbo.Permissions (Code, Name, Module, Description) VALUES
  (N'HW.VIEW', N'View Hardware', N'Hardware', N'View devices, assignments, settings, events, and attachments'),
  (N'HW.MANAGE', N'Manage Hardware', N'Hardware', N'Manage devices, assignments, settings, events, and attachments'),
  (N'PRINT.MANAGE', N'Manage Print', N'Hardware', N'Manage print templates and barcode print jobs'),
+ (N'SYNC.VIEW', N'View Sync', N'Sync', N'View sync nodes, batches, items, and idempotency keys'),
+ (N'SYNC.MANAGE', N'Manage Sync', N'Sync', N'Register sync nodes, push/pull batches, and update sync item status'),
  (N'RPT.VIEW', N'View Reports', N'Reports', N'Access operational reports');
 GO
 
@@ -156,6 +158,14 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'FIN.COA')
 IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'FIN.JOURNAL')
     INSERT INTO dbo.Permissions (Code, Name, Module, Description)
     VALUES (N'FIN.JOURNAL', N'Post Journals', N'Finance', N'Post journal entries');
+
+/* Idempotent add for Phase 11 offline sync permissions */
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'SYNC.VIEW')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'SYNC.VIEW', N'View Sync', N'Sync', N'View sync nodes, batches, items, and idempotency keys');
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'SYNC.MANAGE')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'SYNC.MANAGE', N'Manage Sync', N'Sync', N'Register sync nodes, push/pull batches, and update sync item status');
 GO
 
 

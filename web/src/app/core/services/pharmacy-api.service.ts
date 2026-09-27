@@ -92,6 +92,17 @@ import {
   SupplierPaymentSearchParams,
   SupplierReturnDto,
   SupplierReturnSearchParams,
+  SyncBatchDto,
+  SyncBatchSearchParams,
+  SyncNodeDto,
+  SyncNodeSearchParams,
+  SyncPullRequest,
+  SyncPushPullResultDto,
+  SyncPushRequest,
+  RegisterSyncNodeRequest,
+  UpdateSyncNodeRequest,
+  IdempotencyKeyDto,
+  IdempotencyKeySearchParams,
   TaxProfileDto,
   TaxProfileSearchParams,
   TaxRateDto,
@@ -1022,6 +1033,75 @@ export class PharmacyApiService {
   reverseJournalEntry(id: number): Observable<JournalEntryDto> {
     return this.http
       .post<ApiResponse<JournalEntryDto>>(`${this.base}/api/v1/journal-entries/${id}/reverse`, {})
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchSyncNodes(params: SyncNodeSearchParams = {}): Observable<PagedResult<SyncNodeDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.terminalId != null) httpParams = httpParams.set('terminalId', params.terminalId);
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    return this.http
+      .get<ApiResponse<PagedResult<SyncNodeDto>>>(`${this.base}/api/v1/sync-nodes`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  registerSyncNode(request: RegisterSyncNodeRequest): Observable<SyncNodeDto> {
+    return this.http
+      .post<ApiResponse<SyncNodeDto>>(`${this.base}/api/v1/sync-nodes`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateSyncNode(id: number, request: UpdateSyncNodeRequest): Observable<SyncNodeDto> {
+    return this.http
+      .put<ApiResponse<SyncNodeDto>>(`${this.base}/api/v1/sync-nodes/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchSyncBatches(params: SyncBatchSearchParams = {}): Observable<PagedResult<SyncBatchDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.syncNodeId != null) httpParams = httpParams.set('syncNodeId', params.syncNodeId);
+    if (params.status) httpParams = httpParams.set('status', params.status);
+    return this.http
+      .get<ApiResponse<PagedResult<SyncBatchDto>>>(`${this.base}/api/v1/sync-batches`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getSyncBatch(id: number): Observable<SyncBatchDto> {
+    return this.http
+      .get<ApiResponse<SyncBatchDto>>(`${this.base}/api/v1/sync-batches/${id}`)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  syncPush(request: SyncPushRequest): Observable<SyncPushPullResultDto> {
+    return this.http
+      .post<ApiResponse<SyncPushPullResultDto>>(`${this.base}/api/v1/sync/push`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  syncPull(request: SyncPullRequest): Observable<SyncPushPullResultDto> {
+    return this.http
+      .post<ApiResponse<SyncPushPullResultDto>>(`${this.base}/api/v1/sync/pull`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchIdempotencyKeys(params: IdempotencyKeySearchParams = {}): Observable<PagedResult<IdempotencyKeyDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.terminalId != null) httpParams = httpParams.set('terminalId', params.terminalId);
+    if (params.entityType?.trim()) httpParams = httpParams.set('entityType', params.entityType.trim());
+    return this.http
+      .get<ApiResponse<PagedResult<IdempotencyKeyDto>>>(`${this.base}/api/v1/idempotency-keys`, {
+        params: httpParams,
+      })
       .pipe(map((r) => this.unwrap(r)));
   }
 

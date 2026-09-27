@@ -17,6 +17,7 @@ using PharmacyManagement.Application.DTOs.Products;
 using PharmacyManagement.Application.DTOs.Procurement;
 using PharmacyManagement.Application.DTOs.Purchasing;
 using PharmacyManagement.Application.DTOs.Sales;
+using PharmacyManagement.Application.DTOs.Sync;
 using PharmacyManagement.Application.DTOs.Tax;
 
 namespace PharmacyManagement.Application.Interfaces;
@@ -472,4 +473,26 @@ public interface IJournalEntryService
     Task<JournalEntryDto> CreateDraftAsync(CreateJournalEntryRequest request, CancellationToken ct = default);
     Task<JournalEntryDto> PostAsync(long id, CancellationToken ct = default);
     Task<JournalEntryDto> ReverseAsync(long id, CancellationToken ct = default);
+}
+
+public interface ISyncService
+{
+    Task<PagedResult<SyncNodeDto>> SearchNodesAsync(SyncNodeQuery query, CancellationToken ct = default);
+    Task<SyncNodeDto?> GetNodeByIdAsync(long id, CancellationToken ct = default);
+    Task<SyncNodeDto> RegisterNodeAsync(RegisterSyncNodeRequest request, CancellationToken ct = default);
+    Task<SyncNodeDto> UpdateNodeAsync(long id, UpdateSyncNodeRequest request, CancellationToken ct = default);
+
+    Task<PagedResult<SyncBatchDto>> SearchBatchesAsync(SyncBatchQuery query, CancellationToken ct = default);
+    Task<SyncBatchDto?> GetBatchByIdAsync(long id, CancellationToken ct = default);
+    Task<SyncBatchDto> CreateBatchAsync(CreateSyncBatchRequest request, CancellationToken ct = default);
+    Task<SyncBatchDto> UpdateBatchStatusAsync(long id, UpdateSyncBatchStatusRequest request, CancellationToken ct = default);
+
+    Task<PagedResult<SyncItemDto>> SearchItemsAsync(long batchId, SyncItemQuery query, CancellationToken ct = default);
+    Task<IReadOnlyList<SyncItemDto>> AddItemsAsync(long batchId, CreateSyncItemsRequest request, CancellationToken ct = default);
+    Task<SyncItemDto> UpdateItemStatusAsync(long id, UpdateSyncItemStatusRequest request, CancellationToken ct = default);
+
+    Task<SyncPushPullResultDto> PushAsync(SyncPushRequest request, CancellationToken ct = default);
+    Task<SyncPushPullResultDto> PullAsync(SyncPullRequest request, CancellationToken ct = default);
+
+    Task<PagedResult<IdempotencyKeyDto>> SearchIdempotencyKeysAsync(IdempotencyKeyQuery query, CancellationToken ct = default);
 }

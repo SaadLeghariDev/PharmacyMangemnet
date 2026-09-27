@@ -64,6 +64,8 @@ public static class PermissionPolicies
             Add(PermissionCodes.HwView);
             Add(PermissionCodes.HwManage);
             Add(PermissionCodes.PrintManage);
+            Add(PermissionCodes.SyncView);
+            Add(PermissionCodes.SyncManage);
         });
         return services;
     }
