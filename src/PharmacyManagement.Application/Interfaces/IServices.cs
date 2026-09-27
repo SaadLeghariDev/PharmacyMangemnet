@@ -4,6 +4,7 @@ using PharmacyManagement.Application.DTOs.Inventory;
 using PharmacyManagement.Application.DTOs.Organization;
 using PharmacyManagement.Application.DTOs.Products;
 using PharmacyManagement.Application.DTOs.Purchasing;
+using PharmacyManagement.Application.DTOs.Sales;
 
 namespace PharmacyManagement.Application.Interfaces;
 
@@ -134,4 +135,30 @@ public interface IStockCountService
     Task<StockCountDto?> GetByIdAsync(long id, CancellationToken ct = default);
     Task<StockCountDto> CreateAsync(CreateStockCountRequest request, CancellationToken ct = default);
     Task<StockCountDto> CompleteAsync(long id, CancellationToken ct = default);
+}
+
+public interface ISaleService
+{
+    Task<PagedResult<SaleDto>> SearchAsync(SaleQuery query, CancellationToken ct = default);
+    Task<SaleDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<SaleReceiptDto?> GetReceiptAsync(long id, CancellationToken ct = default);
+    Task<SaleDto> CreateAsync(CreateSaleRequest request, CancellationToken ct = default);
+    Task<SaleDto> RecordPaymentAsync(long saleId, RecordSalePaymentRequest request, CancellationToken ct = default);
+}
+
+public interface IHeldSaleService
+{
+    Task<PagedResult<HeldSaleDto>> SearchAsync(HeldSaleQuery query, CancellationToken ct = default);
+    Task<HeldSaleDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<HeldSaleDto> HoldAsync(HoldSaleRequest request, CancellationToken ct = default);
+    Task<HeldSaleDto> ResumeAsync(long id, CancellationToken ct = default);
+    Task DiscardAsync(long id, CancellationToken ct = default);
+}
+
+public interface ISaleReturnService
+{
+    Task<PagedResult<SaleReturnDto>> SearchAsync(SaleReturnQuery query, CancellationToken ct = default);
+    Task<SaleReturnDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<SaleReturnDto> CreateAsync(CreateSaleReturnRequest request, CancellationToken ct = default);
+    Task<SaleReturnDto> PostAsync(long id, CancellationToken ct = default);
 }

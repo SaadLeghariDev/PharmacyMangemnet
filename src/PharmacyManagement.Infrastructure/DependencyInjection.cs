@@ -38,6 +38,9 @@ public static class DependencyInjection
         services.AddScoped<IStockTransferService, StockTransferService>();
         services.AddScoped<IStockAdjustmentService, StockAdjustmentService>();
         services.AddScoped<IStockCountService, StockCountService>();
+        services.AddScoped<ISaleService, SaleService>();
+        services.AddScoped<IHeldSaleService, HeldSaleService>();
+        services.AddScoped<ISaleReturnService, SaleReturnService>();
 
         return services;
     }

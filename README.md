@@ -1,6 +1,6 @@
 # Pharmacy Management System
 
-Database-first pharmacy management platform. Phase 1 delivers SQL Server DDL; Phase 2A Auth/Org/Products APIs; Phase 2B Purchasing + Inventory APIs.
+Database-first pharmacy management platform. Phase 1 SQL Server DDL; Phase 2A Auth/Org/Products; Phase 2B Purchasing + Inventory; Phase 2C Sales/POS.
 
 ## Structure
 
@@ -30,16 +30,16 @@ database/                 # Phase 1 DDL (source of truth — no EF migrations)
 
 Docker default: `localhost,14333` / sa / `Your_strong_Password123`.
 
-## API (Phase 2B)
+## API (Phase 2C)
 
 ```bash
 dotnet restore
 dotnet build
-dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5299
+dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5309
 ```
 
-- Swagger: http://127.0.0.1:5299/swagger
-- Health: http://127.0.0.1:5299/health
+- Swagger: http://127.0.0.1:5309/swagger
+- Health: http://127.0.0.1:5309/health
 - Connection string key: `ConnectionStrings:PharmacyManagement`
 
 ### Modules
@@ -54,8 +54,12 @@ dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5299
 | Stock Transfers | `/api/v1/stock-transfers` | `INV.TRANSFER` |
 | Stock Adjustments | `/api/v1/stock-adjustments` | `INV.ADJUST` |
 | Stock Counts | `/api/v1/stock-counts` | `INV.ADJUST` |
+| Sales / POS | `/api/v1/sales` | `POS.SALE` |
+| Held sales | `/api/v1/held-sales` | `POS.HOLD` |
+| Sale returns | `/api/v1/sale-returns` | `POS.RETURN` |
 
 Document numbers use atomic `NumberSequences` increments (UPDLOCK) — never `MAX(Id)+1`.
+Sale invoices are terminal-scoped (`SALE` + `TerminalId`); returns are branch-scoped (`RETURN`).
 
 ### Local SQL Express (PC)
 
@@ -73,6 +77,6 @@ Seed user `admin` has a placeholder password hash. In **Development**, password 
 dotnet test
 ```
 
-## Explicit non-goals (Phase 2B)
+## Explicit non-goals (Phase 2C)
 
-Sales/POS, sale returns, supplier payments/ledger, supplier returns, Angular UI, EF migrations, schema changes, reorder automation.
+Void sales deep workflow, fiscal/FBR submit, cash shifts UI detail, prescription dispense, controlled-drug register posts, Angular UI, supplier returns, EF migrations, schema changes.

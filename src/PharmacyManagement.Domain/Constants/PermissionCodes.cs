@@ -13,6 +13,9 @@ public static class PermissionCodes
     public const string InvTransfer = "INV.TRANSFER";
     public const string ProcPo = "PROC.PO";
     public const string ProcGrn = "PROC.GRN";
+    public const string PosSale = "POS.SALE";
+    public const string PosHold = "POS.HOLD";
+    public const string PosReturn = "POS.RETURN";
 }
 
 public static class DocumentTypes
@@ -22,6 +25,8 @@ public static class DocumentTypes
     public const string StockTransfer = "TRANSFER";
     public const string StockAdjustment = "ADJ";
     public const string StockCount = "COUNT";
+    public const string Sale = "SALE";
+    public const string SaleReturn = "RETURN";
 }
 
 public static class MovementTypes
@@ -31,11 +36,14 @@ public static class MovementTypes
     public const string TransferIn = "TransferIn";
     public const string Adjustment = "Adjustment";
     public const string StockCount = "StockCount";
+    public const string Sale = "Sale";
+    public const string Return = "Return";
 }
 
 public static class BatchStatuses
 {
     public const string Available = "Available";
+    public const string Quarantine = "Quarantine";
 }
 
 public static class AppClaimTypes
