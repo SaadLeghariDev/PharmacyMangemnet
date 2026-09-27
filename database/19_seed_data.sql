@@ -70,6 +70,7 @@ INSERT INTO dbo.Permissions (Code, Name, Module, Description) VALUES
  (N'FISCAL.SUBMIT', N'Submit Fiscal', N'Fiscal', N'Create and submit FBR/fiscal documents'),
  (N'FIN.JOURNAL', N'Post Journals', N'Finance', N'Post journal entries'),
  (N'FIN.CASH', N'Cash Shift', N'Finance', N'Open and close cash shifts'),
+ (N'FIN.EXPENSE', N'Manage Expenses', N'Finance', N'Create and list expenses and categories'),
  (N'RPT.VIEW', N'View Reports', N'Reports', N'Access operational reports');
 GO
 
@@ -85,6 +86,11 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'CUST.EDIT')
 IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'FISCAL.SUBMIT')
     INSERT INTO dbo.Permissions (Code, Name, Module, Description)
     VALUES (N'FISCAL.SUBMIT', N'Submit Fiscal', N'Fiscal', N'Create and submit FBR/fiscal documents');
+
+/* Idempotent add for Phase 4 expense permission */
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'FIN.EXPENSE')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'FIN.EXPENSE', N'Manage Expenses', N'Finance', N'Create and list expenses and categories');
 GO
 
 /* Minimal demo org for tests */
@@ -197,6 +203,10 @@ IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND 
 IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND DocumentType = N'CTRL_REGISTER' AND BranchId = @BranchId AND TerminalId IS NULL)
     INSERT INTO dbo.NumberSequences (TenantId, BranchId, TerminalId, DocumentType, Prefix, CurrentNumber, NumberLength, ResetPeriod)
     VALUES (@TenantId, @BranchId, NULL, N'CTRL_REGISTER', N'CDR-', 0, 6, N'Never');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND DocumentType = N'EXPENSE' AND BranchId = @BranchId AND TerminalId IS NULL)
+    INSERT INTO dbo.NumberSequences (TenantId, BranchId, TerminalId, DocumentType, Prefix, CurrentNumber, NumberLength, ResetPeriod)
+    VALUES (@TenantId, @BranchId, NULL, N'EXPENSE', N'EXP-', 0, 6, N'Never');
 
 PRINT N'Seed data applied.';
 GO

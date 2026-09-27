@@ -274,3 +274,59 @@ export interface CartLine {
   batchNumber?: string;
   expiryDate?: string;
 }
+
+export interface ExpenseCategoryDto {
+  id: number;
+  name: string;
+  code: string;
+}
+
+export interface CreateExpenseCategoryRequest {
+  name: string;
+  code: string;
+}
+
+export interface UpdateExpenseCategoryRequest {
+  name: string;
+  code: string;
+}
+
+export interface ExpenseDto {
+  id: number;
+  branchId: number;
+  branchName?: string | null;
+  categoryId: number;
+  categoryName?: string | null;
+  categoryCode?: string | null;
+  expenseNumber: string;
+  expenseDate: string;
+  amount: number;
+  paymentMethodId: number;
+  paymentMethodCode?: string | null;
+  paymentMethodName?: string | null;
+  paymentMethodType?: string | null;
+  description?: string | null;
+  createdBy?: number | null;
+  approvedBy?: number | null;
+}
+
+export interface CreateExpenseRequest {
+  branchId: number;
+  categoryId: number;
+  expenseDate: string;
+  amount: number;
+  paymentMethodId: number;
+  description?: string | null;
+  terminalId?: number | null;
+}
+
+export interface ExpenseSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  branchId?: number | null;
+  categoryId?: number | null;
+  paymentMethodId?: number | null;
+  fromDate?: string | null;
+  toDate?: string | null;
+}

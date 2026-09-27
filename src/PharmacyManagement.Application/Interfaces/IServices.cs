@@ -3,6 +3,7 @@ using PharmacyManagement.Application.DTOs.Auth;
 using PharmacyManagement.Application.DTOs.Cash;
 using PharmacyManagement.Application.DTOs.Controlled;
 using PharmacyManagement.Application.DTOs.Customers;
+using PharmacyManagement.Application.DTOs.Expenses;
 using PharmacyManagement.Application.DTOs.Fiscal;
 using PharmacyManagement.Application.DTOs.Inventory;
 using PharmacyManagement.Application.DTOs.Organization;
@@ -172,6 +173,22 @@ public interface ICustomerService
     Task DeactivateAsync(long id, CancellationToken ct = default);
     Task<PagedResult<CustomerLedgerEntryDto>> GetLedgerAsync(long customerId, CustomerLedgerQuery query, CancellationToken ct = default);
     Task<CustomerPaymentDto> RecordPaymentAsync(long customerId, RecordCustomerPaymentRequest request, CancellationToken ct = default);
+}
+
+public interface IExpenseCategoryService
+{
+    Task<PagedResult<ExpenseCategoryDto>> SearchAsync(ExpenseCategoryQuery query, CancellationToken ct = default);
+    Task<ExpenseCategoryDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<ExpenseCategoryDto> CreateAsync(CreateExpenseCategoryRequest request, CancellationToken ct = default);
+    Task<ExpenseCategoryDto> UpdateAsync(long id, UpdateExpenseCategoryRequest request, CancellationToken ct = default);
+}
+
+public interface IExpenseService
+{
+    Task<PagedResult<ExpenseDto>> SearchAsync(ExpenseQuery query, CancellationToken ct = default);
+    Task<ExpenseDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<ExpenseDto> CreateAsync(CreateExpenseRequest request, CancellationToken ct = default);
+    Task<ExpenseDto> UpdateAsync(long id, UpdateExpenseRequest request, CancellationToken ct = default);
 }
 
 public interface IHeldSaleService

@@ -1,0 +1,195 @@
+<app-page-header
+  title="Expenses"
+  subtitle="Record branch expenses and manage expense categories."
+>
+  <app-button variant="secondary" size="sm" (clicked)="openCategories()">Categories</app-button>
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">New expense</app-button>
+</app-page-header>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="Number, category, description…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  <app-input label="From" type="date" [(ngModel)]="fromDate" />
+  <app-input label="To" type="date" [(ngModel)]="toDate" />
+  <app-select label="Branch" [options]="branchOptions()" [(ngModel)]="branchFilter" />
+  <app-select label="Category" [options]="categoryOptions()" [(ngModel)]="categoryFilter" />
+  <app-select label="Payment" [options]="paymentOptions" [(ngModel)]="paymentFilter" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state
+    title="No expenses found"
+    message="Record an expense or clear filters to see results."
+    actionLabel="New expense"
+    (action)="openCreate()"
+  />
+} @else {
+  <app-table
+    [columns]="columns"
+    [hasActions]="false"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>{{ row.expenseNumber }}</td>
+        <td>{{ row.expenseDate | date: 'mediumDate' }}</td>
+        <td>{{ row.categoryName || '—' }}</td>
+        <td>{{ row.branchName || '—' }}</td>
+        <td>{{ row.paymentMethodName || row.paymentMethodCode || '—' }}</td>
+        <td class="num">{{ row.amount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+        <td>{{ row.description || '—' }}</td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal
+  [open]="createOpen()"
+  title="Record expense"
+  size="md"
+  (closed)="closeCreate()"
+>
+  <div class="form-grid">
+    <app-select
+      label="Branch"
+      [required]="true"
+      [options]="createBranchOptions()"
+      [(ngModel)]="createBranchId"
+      [error]="createErrors['branch'] || ''"
+    />
+    <app-select
+      label="Category"
+      [required]="true"
+      [options]="createCategoryOptions()"
+      [(ngModel)]="createCategoryId"
+      [error]="createErrors['category'] || ''"
+    />
+    <app-input
+      label="Expense date"
+      type="date"
+      [required]="true"
+      [(ngModel)]="createDate"
+      [error]="createErrors['date'] || ''"
+    />
+    <app-input
+      label="Amount"
+      type="number"
+      [required]="true"
+      [min]="0"
+      step="0.01"
+      [(ngModel)]="createAmount"
+      [error]="createErrors['amount'] || ''"
+    />
+    <app-select
+      label="Payment method"
+      [required]="true"
+      [options]="createPaymentOptions"
+      [(ngModel)]="createPaymentMethodId"
+      [error]="createErrors['payment'] || ''"
+    />
+    @if (isCashSelected) {
+      <app-select
+        label="Terminal"
+        [required]="true"
+        [options]="terminalOptions()"
+        [(ngModel)]="createTerminalId"
+        [error]="createErrors['terminal'] || ''"
+      />
+    }
+    <app-input
+      label="Description"
+      placeholder="Optional note"
+      [(ngModel)]="createDescription"
+    />
+  </div>
+  <div modal-footer>
+    <app-button variant="ghost" (clicked)="closeCreate()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="submitCreate()" [loading]="saving()">Save expense</app-button>
+  </div>
+</app-modal>
+
+<app-modal
+  [open]="categoriesOpen()"
+  title="Expense categories"
+  size="lg"
+  (closed)="closeCategories()"
+>
+  <div class="cat-layout">
+    <div class="form-grid compact">
+      <app-input
+        label="Name"
+        [required]="true"
+        [(ngModel)]="catName"
+        [error]="catErrors['name'] || ''"
+      />
+      <app-input
+        label="Code"
+        [required]="true"
+        [(ngModel)]="catCode"
+        [error]="catErrors['code'] || ''"
+      />
+      <div class="cat-actions">
+        @if (catEditingId != null) {
+          <app-button variant="ghost" size="sm" (clicked)="resetCategoryForm()" [disabled]="saving()"
+            >Cancel edit</app-button
+          >
+        }
+        <app-button variant="primary" size="sm" (clicked)="saveCategory()" [loading]="saving()">
+          {{ catEditingId == null ? 'Add category' : 'Update category' }}
+        </app-button>
+      </div>
+    </div>
+
+    @if (!categories().length) {
+      <app-empty-state
+        title="No categories yet"
+        message="Add a category such as Utilities, Rent, or Courier."
+      />
+    } @else {
+      <table class="cat-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cat of categories(); track cat.id) {
+            <tr>
+              <td>{{ cat.code }}</td>
+              <td>{{ cat.name }}</td>
+              <td class="actions">
+                <app-button variant="ghost" size="sm" (clicked)="editCategory(cat)">Edit</app-button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+  <div modal-footer>
+    <app-button variant="secondary" (clicked)="closeCategories()">Done</app-button>
+  </div>
+</app-modal>

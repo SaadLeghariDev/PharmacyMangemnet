@@ -8,7 +8,12 @@ import {
   BranchDto,
   CartLine,
   CounterDto,
+  CreateExpenseCategoryRequest,
+  CreateExpenseRequest,
   CreateSaleRequest,
+  ExpenseCategoryDto,
+  ExpenseDto,
+  ExpenseSearchParams,
   FefoCandidateDto,
   HeldSaleDto,
   HoldSaleRequest,
@@ -17,6 +22,7 @@ import {
   ProductDto,
   SaleDto,
   SaleReceiptDto,
+  UpdateExpenseCategoryRequest,
   WarehouseDto,
 } from '../models/api.models';
 
@@ -127,6 +133,55 @@ export class PharmacyApiService {
     return this.http
       .post<ApiResponse<unknown>>(`${this.base}/api/v1/held-sales/${id}/discard`, {})
       .pipe(map(() => void 0));
+  }
+
+  searchExpenses(params: ExpenseSearchParams = {}): Observable<PagedResult<ExpenseDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.categoryId != null) httpParams = httpParams.set('categoryId', params.categoryId);
+    if (params.paymentMethodId != null)
+      httpParams = httpParams.set('paymentMethodId', params.paymentMethodId);
+    if (params.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    return this.http
+      .get<ApiResponse<PagedResult<ExpenseDto>>>(`${this.base}/api/v1/expenses`, {
+        params: httpParams,
+      })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createExpense(request: CreateExpenseRequest): Observable<ExpenseDto> {
+    return this.http
+      .post<ApiResponse<ExpenseDto>>(`${this.base}/api/v1/expenses`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  listExpenseCategories(search = '', pageSize = 100): Observable<ExpenseCategoryDto[]> {
+    let params = new HttpParams().set('pageSize', pageSize);
+    if (search.trim()) params = params.set('search', search.trim());
+    return this.http
+      .get<ApiResponse<PagedResult<ExpenseCategoryDto>>>(`${this.base}/api/v1/expense-categories`, {
+        params,
+      })
+      .pipe(map((r) => this.unwrap(r).items));
+  }
+
+  createExpenseCategory(request: CreateExpenseCategoryRequest): Observable<ExpenseCategoryDto> {
+    return this.http
+      .post<ApiResponse<ExpenseCategoryDto>>(`${this.base}/api/v1/expense-categories`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateExpenseCategory(
+    id: number,
+    request: UpdateExpenseCategoryRequest,
+  ): Observable<ExpenseCategoryDto> {
+    return this.http
+      .put<ApiResponse<ExpenseCategoryDto>>(`${this.base}/api/v1/expense-categories/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
   }
 
   serializeCart(lines: CartLine[]): string {

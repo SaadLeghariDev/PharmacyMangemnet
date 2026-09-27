@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
 import { LoginComponent } from './features/login/login.component';
 import { PosComponent } from './features/pos/pos.component';
+import { ExpensesPageComponent } from './features/expenses/expenses-page.component';
 import { ListPageComponent } from './features/stub/list-page.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { ShellComponent } from './layout/shell.component';
@@ -35,7 +36,7 @@ export const routes: Routes = [
         component: ListPageComponent,
         data: { title: 'Purchase Returns', kind: 'purchase-returns' },
       },
-      { path: 'expenses', component: ListPageComponent, data: { title: 'Expenses', kind: 'expenses' } },
+      { path: 'expenses', component: ExpensesPageComponent },
       { path: 'reports', component: ListPageComponent, data: { title: 'Reports', kind: 'reports' } },
       { path: 'users', component: ListPageComponent, data: { title: 'Users & Roles', kind: 'users' } },
       { path: 'branches', component: ListPageComponent, data: { title: 'Branches', kind: 'branches' } },

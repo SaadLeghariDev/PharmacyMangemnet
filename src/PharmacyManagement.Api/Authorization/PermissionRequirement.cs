@@ -44,6 +44,7 @@ public static class PermissionPolicies
             Add(PermissionCodes.PosReturn);
             Add(PermissionCodes.PosVoid);
             Add(PermissionCodes.FinCash);
+            Add(PermissionCodes.FinExpense);
             Add(PermissionCodes.CustView);
             Add(PermissionCodes.CustEdit);
             Add(PermissionCodes.RxDispense);

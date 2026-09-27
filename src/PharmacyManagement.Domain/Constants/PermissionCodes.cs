@@ -18,6 +18,7 @@ public static class PermissionCodes
     public const string PosReturn = "POS.RETURN";
     public const string PosVoid = "POS.VOID";
     public const string FinCash = "FIN.CASH";
+    public const string FinExpense = "FIN.EXPENSE";
     public const string CustView = "CUST.VIEW";
     public const string CustEdit = "CUST.EDIT";
     public const string RxDispense = "RX.DISPENSE";
@@ -37,6 +38,7 @@ public static class DocumentTypes
     public const string Customer = "CUSTOMER";
     public const string Prescription = "PRESCRIPTION";
     public const string ControlledRegister = "CTRL_REGISTER";
+    public const string Expense = "EXPENSE";
 }
 
 public static class MovementTypes
