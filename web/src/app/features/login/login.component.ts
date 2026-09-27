@@ -1,31 +1,29 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
-import { AppButtonComponent, AppInputComponent } from '../../shared';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppButtonComponent, AppInputComponent],
+  imports: [CommonModule, FormsModule],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
 export class LoginComponent {
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
   username = 'admin';
-  /** Prefilled for local Development seed; clear before sharing screenshots of prod-like envs. */
+  /** Prefill for local Development seed only. */
   password = environment.production ? '' : 'Admin@12345';
   readonly busy = signal(false);
   readonly error = signal('');
 
-  constructor(
-    private readonly auth: AuthService,
-    private readonly router: Router,
-  ) {}
-
-  submit(): void {
+  submit(event?: Event): void {
+    event?.preventDefault();
     if (this.busy()) return;
     this.error.set('');
     if (!this.username.trim() || !this.password) {
@@ -36,13 +34,24 @@ export class LoginComponent {
     this.auth.login({ username: this.username.trim(), password: this.password }).subscribe({
       next: () => {
         this.busy.set(false);
-        void this.router.navigate(['/dashboard']);
+        void this.goHome();
       },
       error: (err: unknown) => {
         this.busy.set(false);
         this.error.set(this.readError(err));
       },
     });
+  }
+
+  private async goHome(): Promise<void> {
+    try {
+      const ok = await this.router.navigateByUrl('/dashboard', { replaceUrl: true });
+      if (!ok) {
+        window.location.assign('/dashboard');
+      }
+    } catch {
+      window.location.assign('/dashboard');
+    }
   }
 
   private readError(err: unknown): string {
