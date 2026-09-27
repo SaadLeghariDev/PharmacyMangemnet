@@ -237,6 +237,9 @@ public sealed class SaleService(
 
             ApplyPayments(sale, request.Payments, paymentMethods, now);
 
+            if (sale.DueAmount > 0 && sale.CustomerId is long creditCustomerId)
+                await EnsureCreditLimitAsync(creditCustomerId, sale.DueAmount, ct);
+
             db.Sales.Add(sale);
 
             try
@@ -279,6 +282,8 @@ public sealed class SaleService(
 
             if (sale.DueAmount > 0 && sale.CustomerId is long customerId)
                 await WriteCustomerLedgerDebitAsync(customerId, sale.BranchId, saleId, sale.DueAmount, now, ct);
+
+            await TryPostCashSaleToOpenShiftAsync(sale, paymentMethods, userId, now, ct);
 
             if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
             {
@@ -375,6 +380,176 @@ public sealed class SaleService(
 
             sale.UpdatedAt = now;
             await db.SaveChangesAsync(ct);
+            if (tx is not null) await tx.CommitAsync(ct);
+        }
+        catch
+        {
+            if (tx is not null) await tx.RollbackAsync(ct);
+            throw;
+        }
+
+        return (await GetByIdAsync(saleId, ct))!;
+    }
+
+    public async Task<SaleDto> VoidAsync(long saleId, VoidSaleRequest request, CancellationToken ct = default)
+    {
+        var tenantId = RequireTenantId();
+        var userId = RequireUserId();
+        var now = DateTime.UtcNow;
+
+        await using var tx = db.Database.IsRelational()
+            ? await db.Database.BeginTransactionAsync(ct)
+            : null;
+        try
+        {
+            var sale = await db.Sales
+                .Include(s => s.Branch)
+                .Include(s => s.SaleLines).ThenInclude(l => l.SaleLineBatches)
+                .Include(s => s.SalePayments).ThenInclude(p => p.PaymentMethod)
+                .FirstOrDefaultAsync(s => s.Id == saleId && s.Branch.TenantId == tenantId, ct)
+                ?? throw new NotFoundException($"Sale {saleId} not found.");
+
+            if (sale.Status != "Completed")
+                throw new ValidationAppException([$"Only Completed sales can be voided (current: {sale.Status})."]);
+
+            if (await db.SaleReturns.AnyAsync(r => r.SaleId == sale.Id && r.Status != "Cancelled", ct))
+                throw new ValidationAppException(["Cannot void a sale that has returns. Use sale return instead."]);
+
+            var saleMovements = await db.InventoryMovements
+                .Where(m =>
+                    m.ReferenceType == "Sale" &&
+                    m.ReferenceId == sale.Id &&
+                    m.MovementType == MovementTypes.Sale)
+                .OrderBy(m => m.Id)
+                .ToListAsync(ct);
+
+            if (saleMovements.Count == 0)
+                throw new ValidationAppException(["Sale has no inventory movements to reverse."]);
+
+            var movIndex = 0;
+            foreach (var mov in saleMovements)
+            {
+                var restoreQty = Math.Abs(mov.Quantity);
+                var loc = await db.InventoryBatchLocations
+                    .FirstOrDefaultAsync(l =>
+                        l.BatchId == mov.BatchId &&
+                        l.WarehouseLocationId == mov.WarehouseLocationId, ct);
+
+                decimal balanceBefore;
+                if (loc is null)
+                {
+                    balanceBefore = 0;
+                    loc = new InventoryBatchLocation
+                    {
+                        BatchId = mov.BatchId,
+                        WarehouseLocationId = mov.WarehouseLocationId,
+                        QuantityOnHand = restoreQty,
+                        ReservedQuantity = 0,
+                        UpdatedAt = now,
+                        RowVersion = new byte[8]
+                    };
+                    db.InventoryBatchLocations.Add(loc);
+                }
+                else
+                {
+                    balanceBefore = loc.QuantityOnHand;
+                    loc.QuantityOnHand += restoreQty;
+                    loc.UpdatedAt = now;
+                }
+
+                db.InventoryMovements.Add(new InventoryMovement
+                {
+                    BranchId = mov.BranchId,
+                    WarehouseId = mov.WarehouseId,
+                    WarehouseLocationId = mov.WarehouseLocationId,
+                    ProductId = mov.ProductId,
+                    BatchId = mov.BatchId,
+                    ProductUnitId = mov.ProductUnitId,
+                    MovementType = MovementTypes.Void,
+                    ReferenceType = "Sale",
+                    ReferenceId = sale.Id,
+                    Quantity = restoreQty,
+                    UnitCost = mov.UnitCost,
+                    TotalCost = Math.Round(restoreQty * mov.UnitCost, 4),
+                    BalanceBefore = balanceBefore,
+                    BalanceAfter = balanceBefore + restoreQty,
+                    MovementDate = now,
+                    PerformedBy = userId,
+                    IdempotencyKey = $"VOID:{sale.Id}:MOV:{++movIndex}",
+                    CreatedAt = now
+                });
+            }
+
+            foreach (var pay in sale.SalePayments.Where(p => p.Status == "Completed"))
+                pay.Status = "Voided";
+
+            var netAr = await db.CustomerLedgers
+                .Where(l => l.ReferenceType == "Sale" && l.ReferenceId == sale.Id)
+                .SumAsync(l => (decimal?)(l.Debit - l.Credit), ct) ?? 0;
+            if (netAr != 0 && sale.CustomerId is long customerId)
+            {
+                var seq = await NextLedgerSequenceAsync(customerId, ct);
+                db.CustomerLedgers.Add(new CustomerLedger
+                {
+                    CustomerId = customerId,
+                    BranchId = sale.BranchId,
+                    TransactionDate = now,
+                    TransactionType = "Void",
+                    ReferenceType = "Sale",
+                    ReferenceId = sale.Id,
+                    Debit = netAr < 0 ? Math.Round(-netAr, 4) : 0,
+                    Credit = netAr > 0 ? Math.Round(netAr, 4) : 0,
+                    SequenceNo = seq,
+                    Remarks = string.IsNullOrWhiteSpace(request.Reason)
+                        ? $"Void sale {sale.InvoiceNumber}"
+                        : $"Void sale {sale.InvoiceNumber}: {request.Reason}"
+                });
+            }
+
+            var cashPaid = sale.SalePayments
+                .Where(p =>
+                    p.TransactionType == "Payment" &&
+                    p.PaymentMethod is not null &&
+                    string.Equals(p.PaymentMethod.Type, "Cash", StringComparison.OrdinalIgnoreCase))
+                .Sum(p => p.Amount);
+            if (cashPaid > 0)
+            {
+                var openShift = await db.CashShifts
+                    .FirstOrDefaultAsync(s => s.TerminalId == sale.TerminalId && s.Status == "Open", ct);
+                if (openShift is not null)
+                {
+                    db.CashTransactions.Add(new CashTransaction
+                    {
+                        CashShiftId = openShift.Id,
+                        TransactionType = "Refund",
+                        ReferenceType = "Sale",
+                        ReferenceId = sale.Id,
+                        Amount = Math.Round(cashPaid, 4),
+                        Remarks = string.IsNullOrWhiteSpace(request.Reason)
+                            ? $"Void {sale.InvoiceNumber}"
+                            : request.Reason,
+                        CreatedBy = userId,
+                        CreatedAt = now
+                    });
+                }
+            }
+
+            sale.Status = "Voided";
+            sale.PaidAmount = 0;
+            sale.DueAmount = 0;
+            sale.ChangeAmount = 0;
+            sale.PaymentStatus = "Refunded";
+            sale.UpdatedAt = now;
+
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw new ConflictException("Stock location was modified concurrently. Reload and retry.");
+            }
+
             if (tx is not null) await tx.CommitAsync(ct);
         }
         catch
@@ -605,6 +780,56 @@ public sealed class SaleService(
         sale.PaymentStatus = sale.DueAmount == 0
             ? "Paid"
             : sale.PaidAmount > 0 ? "Partial" : "Unpaid";
+    }
+
+    private async Task EnsureCreditLimitAsync(long customerId, decimal additionalDue, CancellationToken ct)
+    {
+        var customer = await db.Customers.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == customerId, ct)
+            ?? throw new ValidationAppException(["Customer not found."]);
+
+        var debit = await db.CustomerLedgers.Where(l => l.CustomerId == customerId).SumAsync(l => (decimal?)l.Debit, ct) ?? 0;
+        var credit = await db.CustomerLedgers.Where(l => l.CustomerId == customerId).SumAsync(l => (decimal?)l.Credit, ct) ?? 0;
+        var balance = debit - credit;
+        var projected = Math.Round(balance + additionalDue, 4);
+        if (projected > customer.CreditLimit)
+            throw new ValidationAppException([
+                $"Credit limit exceeded. Limit {customer.CreditLimit}, balance {Math.Round(balance, 4)}, new due {additionalDue}."]);
+    }
+
+    private async Task TryPostCashSaleToOpenShiftAsync(
+        Sale sale,
+        IReadOnlyDictionary<long, PaymentMethod> methods,
+        long userId,
+        DateTime now,
+        CancellationToken ct)
+    {
+        decimal cashPaid = 0;
+        foreach (var p in sale.SalePayments.Where(p => p.Status == "Completed" && p.TransactionType == "Payment"))
+        {
+            if (!methods.TryGetValue(p.PaymentMethodId, out var method)) continue;
+            if (string.Equals(method.Type, "Cash", StringComparison.OrdinalIgnoreCase))
+                cashPaid += p.Amount;
+        }
+
+        cashPaid = Math.Round(cashPaid, 4);
+        if (cashPaid <= 0) return;
+
+        var openShift = await db.CashShifts
+            .FirstOrDefaultAsync(s => s.TerminalId == sale.TerminalId && s.Status == "Open", ct);
+        if (openShift is null) return;
+
+        db.CashTransactions.Add(new CashTransaction
+        {
+            CashShiftId = openShift.Id,
+            TransactionType = "Sale",
+            ReferenceType = "Sale",
+            ReferenceId = sale.Id,
+            Amount = cashPaid,
+            Remarks = sale.InvoiceNumber,
+            CreatedBy = userId,
+            CreatedAt = now
+        });
     }
 
     private async Task WriteCustomerLedgerDebitAsync(

@@ -16,6 +16,10 @@ public static class PermissionCodes
     public const string PosSale = "POS.SALE";
     public const string PosHold = "POS.HOLD";
     public const string PosReturn = "POS.RETURN";
+    public const string PosVoid = "POS.VOID";
+    public const string FinCash = "FIN.CASH";
+    public const string CustView = "CUST.VIEW";
+    public const string CustEdit = "CUST.EDIT";
 }
 
 public static class DocumentTypes
@@ -27,6 +31,7 @@ public static class DocumentTypes
     public const string StockCount = "COUNT";
     public const string Sale = "SALE";
     public const string SaleReturn = "RETURN";
+    public const string Customer = "CUSTOMER";
 }
 
 public static class MovementTypes
@@ -38,6 +43,7 @@ public static class MovementTypes
     public const string StockCount = "StockCount";
     public const string Sale = "Sale";
     public const string Return = "Return";
+    public const string Void = "Void";
 }
 
 public static class BatchStatuses

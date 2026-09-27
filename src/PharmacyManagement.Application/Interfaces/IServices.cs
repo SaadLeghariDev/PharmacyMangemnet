@@ -1,5 +1,7 @@
 using PharmacyManagement.Application.Common;
 using PharmacyManagement.Application.DTOs.Auth;
+using PharmacyManagement.Application.DTOs.Cash;
+using PharmacyManagement.Application.DTOs.Customers;
 using PharmacyManagement.Application.DTOs.Inventory;
 using PharmacyManagement.Application.DTOs.Organization;
 using PharmacyManagement.Application.DTOs.Products;
@@ -144,6 +146,29 @@ public interface ISaleService
     Task<SaleReceiptDto?> GetReceiptAsync(long id, CancellationToken ct = default);
     Task<SaleDto> CreateAsync(CreateSaleRequest request, CancellationToken ct = default);
     Task<SaleDto> RecordPaymentAsync(long saleId, RecordSalePaymentRequest request, CancellationToken ct = default);
+    Task<SaleDto> VoidAsync(long saleId, VoidSaleRequest request, CancellationToken ct = default);
+}
+
+public interface ICashShiftService
+{
+    Task<PagedResult<CashShiftDto>> SearchAsync(CashShiftQuery query, CancellationToken ct = default);
+    Task<CashShiftDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<CashShiftDto?> GetCurrentAsync(long terminalId, CancellationToken ct = default);
+    Task<CashShiftDto> OpenAsync(OpenCashShiftRequest request, CancellationToken ct = default);
+    Task<CashShiftDto> PayInAsync(long id, CashDrawerMovementRequest request, CancellationToken ct = default);
+    Task<CashShiftDto> PayOutAsync(long id, CashDrawerMovementRequest request, CancellationToken ct = default);
+    Task<CashShiftDto> CloseAsync(long id, CloseCashShiftRequest request, CancellationToken ct = default);
+}
+
+public interface ICustomerService
+{
+    Task<PagedResult<CustomerDto>> SearchAsync(CustomerQuery query, CancellationToken ct = default);
+    Task<CustomerDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<CustomerDto> CreateAsync(CreateCustomerRequest request, CancellationToken ct = default);
+    Task<CustomerDto> UpdateAsync(long id, UpdateCustomerRequest request, CancellationToken ct = default);
+    Task DeactivateAsync(long id, CancellationToken ct = default);
+    Task<PagedResult<CustomerLedgerEntryDto>> GetLedgerAsync(long customerId, CustomerLedgerQuery query, CancellationToken ct = default);
+    Task<CustomerPaymentDto> RecordPaymentAsync(long customerId, RecordCustomerPaymentRequest request, CancellationToken ct = default);
 }
 
 public interface IHeldSaleService

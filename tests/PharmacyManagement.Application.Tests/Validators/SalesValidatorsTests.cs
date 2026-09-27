@@ -78,4 +78,13 @@ public class SalesValidatorsTests
         });
         result.IsValid.Should().BeFalse();
     }
+
+    [Fact]
+    public void VoidSaleRequest_accepts_null_reason()
+    {
+        var v = new VoidSaleRequestValidator();
+        var result = v.Validate(new VoidSaleRequest());
+        result.IsValid.Should().BeTrue();
+    }
 }
+

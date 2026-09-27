@@ -63,11 +63,22 @@ INSERT INTO dbo.Permissions (Code, Name, Module, Description) VALUES
  (N'POS.RETURN', N'POS Return', N'POS', N'Process sale returns'),
  (N'POS.HOLD', N'Hold Sales', N'POS', N'Hold and resume carts'),
  (N'POS.VOID', N'Void Sales', N'POS', N'Void completed sales'),
+ (N'CUST.VIEW', N'View Customers', N'Customer', N'View customers and AR ledger'),
+ (N'CUST.EDIT', N'Edit Customers', N'Customer', N'Create customers and record AR payments'),
  (N'RX.DISPENSE', N'Dispense Prescription', N'Prescription', N'Dispense Rx items'),
  (N'CTRL.MANAGE', N'Controlled Drugs', N'Controlled', N'Manage controlled registers'),
  (N'FIN.JOURNAL', N'Post Journals', N'Finance', N'Post journal entries'),
  (N'FIN.CASH', N'Cash Shift', N'Finance', N'Open and close cash shifts'),
  (N'RPT.VIEW', N'View Reports', N'Reports', N'Access operational reports');
+GO
+
+/* Idempotent add for databases seeded before Phase 2D customer permissions */
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'CUST.VIEW')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'CUST.VIEW', N'View Customers', N'Customer', N'View customers and AR ledger');
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'CUST.EDIT')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'CUST.EDIT', N'Edit Customers', N'Customer', N'Create customers and record AR payments');
 GO
 
 /* Minimal demo org for tests */

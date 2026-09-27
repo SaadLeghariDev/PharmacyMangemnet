@@ -42,6 +42,10 @@ public static class PermissionPolicies
             Add(PermissionCodes.PosSale);
             Add(PermissionCodes.PosHold);
             Add(PermissionCodes.PosReturn);
+            Add(PermissionCodes.PosVoid);
+            Add(PermissionCodes.FinCash);
+            Add(PermissionCodes.CustView);
+            Add(PermissionCodes.CustEdit);
         });
         return services;
     }

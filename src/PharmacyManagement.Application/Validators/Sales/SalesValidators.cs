@@ -86,3 +86,11 @@ public sealed class CreateSaleReturnRequestValidator : AbstractValidator<CreateS
         });
     }
 }
+
+public sealed class VoidSaleRequestValidator : AbstractValidator<VoidSaleRequest>
+{
+    public VoidSaleRequestValidator()
+    {
+        RuleFor(x => x.Reason).MaximumLength(500).When(x => x.Reason is not null);
+    }
+}

@@ -14,7 +14,8 @@ namespace PharmacyManagement.Api.Controllers;
 public sealed class SalesController(
     ISaleService sales,
     IValidator<CreateSaleRequest> createValidator,
-    IValidator<RecordSalePaymentRequest> paymentValidator) : ControllerBase
+    IValidator<RecordSalePaymentRequest> paymentValidator,
+    IValidator<VoidSaleRequest> voidValidator) : ControllerBase
 {
     [HttpGet]
     [Authorize(Policy = PermissionCodes.PosSale)]
@@ -62,5 +63,17 @@ public sealed class SalesController(
             return BadRequest(ApiResponse<SaleDto>.Fail("Validation failed", validation.Errors.Select(e => e.ErrorMessage)));
         var item = await sales.RecordPaymentAsync(id, request, ct);
         return Ok(ApiResponse<SaleDto>.Ok(item, "Payment recorded"));
+    }
+
+    [HttpPost("{id:long}/void")]
+    [Authorize(Policy = PermissionCodes.PosVoid)]
+    public async Task<ActionResult<ApiResponse<SaleDto>>> Void(long id, [FromBody] VoidSaleRequest? request, CancellationToken ct)
+    {
+        request ??= new VoidSaleRequest();
+        var validation = await voidValidator.ValidateAsync(request, ct);
+        if (!validation.IsValid)
+            return BadRequest(ApiResponse<SaleDto>.Fail("Validation failed", validation.Errors.Select(e => e.ErrorMessage)));
+        var item = await sales.VoidAsync(id, request, ct);
+        return Ok(ApiResponse<SaleDto>.Ok(item, "Sale voided"));
     }
 }

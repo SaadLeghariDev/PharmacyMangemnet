@@ -144,6 +144,11 @@ public sealed class RecordSalePaymentRequest
     public string? ReferenceNumber { get; set; }
 }
 
+public sealed class VoidSaleRequest
+{
+    public string? Reason { get; set; }
+}
+
 public sealed class HeldSaleQuery : PaginationQuery
 {
     public long? BranchId { get; set; }
