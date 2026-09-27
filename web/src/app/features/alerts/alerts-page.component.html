@@ -1,0 +1,165 @@
+<app-page-header
+  title="Alerts"
+  subtitle="Configure LowStock and Expiry rules, evaluate on demand, and acknowledge or resolve alerts."
+>
+  <app-button variant="secondary" size="sm" (clicked)="openCreateRule()">New rule</app-button>
+  <app-button variant="primary" size="sm" (clicked)="evaluate()" [loading]="evaluating()">
+    Evaluate now
+  </app-button>
+</app-page-header>
+
+<div class="tabs">
+  <button type="button" class="tab" [class.active]="tab === 'alerts'" (click)="setTab('alerts')">Alerts</button>
+  <button type="button" class="tab" [class.active]="tab === 'rules'" (click)="setTab('rules')">Alert rules</button>
+</div>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="Title, product…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  <app-select label="Branch" [options]="branchOptions" [(ngModel)]="branchFilter" />
+  <app-select
+    [label]="tab === 'alerts' ? 'Status' : 'Active'"
+    [options]="tab === 'alerts' ? statusOptions : activeOptions"
+    [(ngModel)]="statusFilter"
+  />
+  <app-select label="Type" [options]="typeOptions" [(ngModel)]="typeFilter" />
+  @if (tab === 'alerts') {
+    <app-select label="Severity" [options]="severityOptions" [(ngModel)]="severityFilter" />
+  }
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (tab === 'alerts' && !alerts().length) {
+  <app-empty-state
+    title="No alerts"
+    message="Run Evaluate to scan reorder and expiry rules, or clear filters."
+    actionLabel="Evaluate now"
+    (action)="evaluate()"
+  />
+} @else if (tab === 'rules' && !rules().length) {
+  <app-empty-state
+    title="No alert rules"
+    message="Create LowStock or Expiry rules before evaluating alerts."
+    actionLabel="New rule"
+    (action)="openCreateRule()"
+  />
+} @else if (tab === 'alerts') {
+  <app-table
+    [columns]="alertColumns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of alerts(); track row.id) {
+      <tr>
+        <td><app-badge [tone]="severityTone(row.severity)">{{ row.severity }}</app-badge></td>
+        <td>{{ row.alertType || '—' }}</td>
+        <td>
+          <div class="primary">{{ row.title }}</div>
+          <div class="muted">{{ row.message }}</div>
+        </td>
+        <td>
+          @if (row.productSku) {
+            <div class="primary">{{ row.productName }}</div>
+            <div class="muted">{{ row.productSku }}{{ row.batchNumber ? ' · ' + row.batchNumber : '' }}</div>
+          } @else {
+            —
+          }
+        </td>
+        <td><app-badge [tone]="statusTone(row.status)">{{ row.status }}</app-badge></td>
+        <td>{{ row.createdAt | date: 'medium' }}</td>
+        <td class="actions">
+          @if (row.status === 'Open') {
+            <app-button variant="ghost" size="sm" (clicked)="acknowledge(row)">Ack</app-button>
+          }
+          @if (row.status === 'Open' || row.status === 'Acknowledged') {
+            <app-button variant="secondary" size="sm" (clicked)="resolve(row)">Resolve</app-button>
+          }
+        </td>
+      </tr>
+    }
+  </app-table>
+} @else {
+  <app-table
+    [columns]="ruleColumns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of rules(); track row.id) {
+      <tr>
+        <td>{{ row.alertType }}</td>
+        <td>{{ row.branchCode || 'All branches' }}</td>
+        <td>{{ row.threshold ?? '—' }}</td>
+        <td>{{ row.daysBeforeExpiry ?? '—' }}</td>
+        <td>
+          <app-badge [tone]="row.isActive ? 'success' : 'warning'">
+            {{ row.isActive ? 'Active' : 'Inactive' }}
+          </app-badge>
+        </td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openEditRule(row)">Edit</app-button>
+        </td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal
+  [open]="modalOpen()"
+  [title]="editingRuleId == null ? 'New alert rule' : 'Edit alert rule'"
+  size="md"
+  (closed)="closeModal()"
+>
+  <div class="form-grid">
+    <app-select
+      label="Alert type"
+      [required]="true"
+      [options]="typeOptions.slice(1)"
+      [(ngModel)]="formAlertType"
+      [error]="formErrors['type'] || ''"
+    />
+    <app-select label="Branch (optional)" [options]="branchOptions" [(ngModel)]="formBranchId" />
+    @if (formAlertType === 'LowStock') {
+      <app-input label="Threshold (optional)" type="number" [(ngModel)]="formThreshold" />
+    }
+    @if (formAlertType === 'Expiry') {
+      <app-input
+        label="Days before expiry"
+        type="number"
+        [(ngModel)]="formDaysBeforeExpiry"
+        [error]="formErrors['days'] || ''"
+      />
+    }
+    <label class="check">
+      <input type="checkbox" [(ngModel)]="formIsActive" />
+      Active
+    </label>
+  </div>
+  <div modal-footer class="modal-actions">
+    <app-button variant="ghost" (clicked)="closeModal()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="saveRule()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>

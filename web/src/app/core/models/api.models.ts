@@ -610,3 +610,153 @@ export interface ProductTaxProfileDto {
 export interface ReplaceProductTaxProfilesRequest {
   taxProfileIds: number[];
 }
+
+export interface ReorderRuleDto {
+  id: number;
+  branchId: number;
+  branchCode?: string | null;
+  warehouseId: number;
+  warehouseCode?: string | null;
+  productId: number;
+  productSku?: string | null;
+  productName?: string | null;
+  minimumStock: number;
+  maximumStock: number;
+  reorderPoint: number;
+  reorderQuantity: number;
+  preferredSupplierId: number;
+  preferredSupplierName?: string | null;
+  isActive: boolean;
+}
+
+export interface CreateReorderRuleRequest {
+  branchId: number;
+  warehouseId: number;
+  productId: number;
+  minimumStock: number;
+  maximumStock: number;
+  reorderPoint: number;
+  reorderQuantity: number;
+  preferredSupplierId: number;
+  isActive: boolean;
+}
+
+export interface UpdateReorderRuleRequest {
+  minimumStock: number;
+  maximumStock: number;
+  reorderPoint: number;
+  reorderQuantity: number;
+  preferredSupplierId: number;
+  isActive: boolean;
+}
+
+export interface ReorderRuleSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  branchId?: number | null;
+  warehouseId?: number | null;
+  productId?: number | null;
+  isActive?: boolean | null;
+}
+
+export interface LowStockCandidateDto {
+  reorderRuleId: number;
+  branchId: number;
+  branchCode?: string | null;
+  warehouseId: number;
+  warehouseCode?: string | null;
+  productId: number;
+  productSku?: string | null;
+  productName?: string | null;
+  minimumStock: number;
+  reorderPoint: number;
+  reorderQuantity: number;
+  preferredSupplierId: number;
+  preferredSupplierName?: string | null;
+  onHandQuantity: number;
+  availableQuantity: number;
+  shortageQuantity: number;
+}
+
+export interface LowStockCandidateSearchParams {
+  page?: number;
+  pageSize?: number;
+  branchId?: number | null;
+  warehouseId?: number | null;
+  productId?: number | null;
+}
+
+export interface AlertRuleDto {
+  id: number;
+  tenantId: number;
+  branchId?: number | null;
+  branchCode?: string | null;
+  alertType: string;
+  threshold?: number | null;
+  daysBeforeExpiry?: number | null;
+  isActive: boolean;
+}
+
+export interface CreateAlertRuleRequest {
+  branchId?: number | null;
+  alertType: string;
+  threshold?: number | null;
+  daysBeforeExpiry?: number | null;
+  isActive: boolean;
+}
+
+export interface UpdateAlertRuleRequest {
+  branchId?: number | null;
+  alertType: string;
+  threshold?: number | null;
+  daysBeforeExpiry?: number | null;
+  isActive: boolean;
+}
+
+export interface AlertRuleSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  branchId?: number | null;
+  alertType?: string | null;
+  isActive?: boolean | null;
+}
+
+export interface AlertDto {
+  id: number;
+  alertRuleId: number;
+  alertType?: string | null;
+  branchId: number;
+  branchCode?: string | null;
+  productId?: number | null;
+  productSku?: string | null;
+  productName?: string | null;
+  batchId?: number | null;
+  batchNumber?: string | null;
+  severity: string;
+  title: string;
+  message?: string | null;
+  status: string;
+  createdAt: string;
+  resolvedAt?: string | null;
+  resolvedBy?: number | null;
+}
+
+export interface AlertSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  branchId?: number | null;
+  productId?: number | null;
+  status?: string | null;
+  severity?: string | null;
+  alertType?: string | null;
+}
+
+export interface EvaluateAlertsResultDto {
+  rulesScanned: number;
+  alertsCreated: number;
+  notificationLogsCreated: number;
+  createdAlerts: AlertDto[];
+}

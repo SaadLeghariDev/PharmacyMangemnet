@@ -12,17 +12,22 @@ import {
   CreateExpenseRequest,
   CreatePriceListRequest,
   CreateProductPriceRequest,
+  CreateReorderRuleRequest,
   CreateSaleRequest,
   CreateSupplierPaymentRequest,
   CreateSupplierReturnRequest,
   CreateTaxProfileRequest,
   CreateTaxRateRequest,
+  CreateAlertRuleRequest,
+  EvaluateAlertsResultDto,
   ExpenseCategoryDto,
   ExpenseDto,
   ExpenseSearchParams,
   FefoCandidateDto,
   HeldSaleDto,
   HoldSaleRequest,
+  LowStockCandidateDto,
+  LowStockCandidateSearchParams,
   PagedResult,
   PosTerminalDto,
   PriceListDto,
@@ -32,6 +37,12 @@ import {
   ProductPriceSearchParams,
   ProductTaxProfileDto,
   ReplaceProductTaxProfilesRequest,
+  ReorderRuleDto,
+  ReorderRuleSearchParams,
+  AlertDto,
+  AlertRuleDto,
+  AlertRuleSearchParams,
+  AlertSearchParams,
   SaleDto,
   SaleReceiptDto,
   SupplierDto,
@@ -44,9 +55,11 @@ import {
   TaxProfileDto,
   TaxProfileSearchParams,
   TaxRateDto,
+  UpdateAlertRuleRequest,
   UpdateExpenseCategoryRequest,
   UpdatePriceListRequest,
   UpdateProductPriceRequest,
+  UpdateReorderRuleRequest,
   UpdateTaxProfileRequest,
   UpdateTaxRateRequest,
   WarehouseDto,
@@ -430,6 +443,111 @@ export class PharmacyApiService {
         `${this.base}/api/v1/products/${productId}/tax-profiles`,
         request,
       )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchReorderRules(params: ReorderRuleSearchParams = {}): Observable<PagedResult<ReorderRuleDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.warehouseId != null) httpParams = httpParams.set('warehouseId', params.warehouseId);
+    if (params.productId != null) httpParams = httpParams.set('productId', params.productId);
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    return this.http
+      .get<ApiResponse<PagedResult<ReorderRuleDto>>>(`${this.base}/api/v1/reorder-rules`, {
+        params: httpParams,
+      })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createReorderRule(request: CreateReorderRuleRequest): Observable<ReorderRuleDto> {
+    return this.http
+      .post<ApiResponse<ReorderRuleDto>>(`${this.base}/api/v1/reorder-rules`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateReorderRule(id: number, request: UpdateReorderRuleRequest): Observable<ReorderRuleDto> {
+    return this.http
+      .put<ApiResponse<ReorderRuleDto>>(`${this.base}/api/v1/reorder-rules/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchLowStockCandidates(
+    params: LowStockCandidateSearchParams = {},
+  ): Observable<PagedResult<LowStockCandidateDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.warehouseId != null) httpParams = httpParams.set('warehouseId', params.warehouseId);
+    if (params.productId != null) httpParams = httpParams.set('productId', params.productId);
+    return this.http
+      .get<ApiResponse<PagedResult<LowStockCandidateDto>>>(
+        `${this.base}/api/v1/reorder-rules/low-stock`,
+        { params: httpParams },
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchAlertRules(params: AlertRuleSearchParams = {}): Observable<PagedResult<AlertRuleDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.alertType) httpParams = httpParams.set('alertType', params.alertType);
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    return this.http
+      .get<ApiResponse<PagedResult<AlertRuleDto>>>(`${this.base}/api/v1/alert-rules`, {
+        params: httpParams,
+      })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createAlertRule(request: CreateAlertRuleRequest): Observable<AlertRuleDto> {
+    return this.http
+      .post<ApiResponse<AlertRuleDto>>(`${this.base}/api/v1/alert-rules`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateAlertRule(id: number, request: UpdateAlertRuleRequest): Observable<AlertRuleDto> {
+    return this.http
+      .put<ApiResponse<AlertRuleDto>>(`${this.base}/api/v1/alert-rules/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchAlerts(params: AlertSearchParams = {}): Observable<PagedResult<AlertDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.productId != null) httpParams = httpParams.set('productId', params.productId);
+    if (params.status) httpParams = httpParams.set('status', params.status);
+    if (params.severity) httpParams = httpParams.set('severity', params.severity);
+    if (params.alertType) httpParams = httpParams.set('alertType', params.alertType);
+    return this.http
+      .get<ApiResponse<PagedResult<AlertDto>>>(`${this.base}/api/v1/alerts`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  evaluateAlerts(): Observable<EvaluateAlertsResultDto> {
+    return this.http
+      .post<ApiResponse<EvaluateAlertsResultDto>>(`${this.base}/api/v1/alerts/evaluate`, {})
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  acknowledgeAlert(id: number): Observable<AlertDto> {
+    return this.http
+      .post<ApiResponse<AlertDto>>(`${this.base}/api/v1/alerts/${id}/acknowledge`, {})
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  resolveAlert(id: number): Observable<AlertDto> {
+    return this.http
+      .post<ApiResponse<AlertDto>>(`${this.base}/api/v1/alerts/${id}/resolve`, {})
       .pipe(map((r) => this.unwrap(r)));
   }
 

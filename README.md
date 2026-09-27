@@ -8,6 +8,7 @@ Database-first pharmacy management platform.
 - **Phase 4** — Expenses + ExpenseCategories (API + Angular)
 - **Phase 5** — Supplier payments / returns / ledger (API + Angular)
 - **Phase 6** — Price lists, product prices, tax profiles/rates, sale InvoiceTaxes (API + Angular)
+- **Phase 7** — Reorder rules, alert rules/alerts evaluate, notification templates/logs (API + Angular)
 
 ## Structure
 
@@ -40,7 +41,7 @@ If you cloned under `F:\Pharmacymanagemnt` (or similar), point the API at Expres
 
 `Server=DESKTOP-H9TF8EF\SQLEXPRESS;Database=PharmacyManagement;Trusted_Connection=True;TrustServerCertificate=True;`
 
-## API (Phase 6+)
+## API (Phase 7+)
 
 ```bash
 dotnet restore
@@ -74,9 +75,15 @@ Seed user `admin` — in **Development**, password is `Admin@12345` (`AuthBootst
 | **Product prices** | `/api/v1/product-prices` | **PRICE.VIEW / PRICE.EDIT** |
 | **Tax profiles / rates** | `/api/v1/tax-profiles`, `/api/v1/tax-profiles/{id}/rates` | **TAX.VIEW / TAX.EDIT** |
 | **Product tax links** | `/api/v1/products/{id}/tax-profiles` | **TAX.VIEW / TAX.EDIT** |
+| **Reorder rules** | `/api/v1/reorder-rules`, `/api/v1/reorder-rules/low-stock` | **INV.REORDER** |
+| **Alert rules** | `/api/v1/alert-rules` | **ALERT.VIEW / ALERT.MANAGE** |
+| **Alerts** | `/api/v1/alerts`, `.../evaluate`, `.../acknowledge`, `.../resolve` | **ALERT.VIEW / ALERT.MANAGE** |
+| **Notification templates/logs** | `/api/v1/notification-templates`, `/api/v1/notification-logs` | **ALERT.VIEW / ALERT.MANAGE** |
 | Rx / Controlled / Fiscal | `/api/v1/prescriptions`, `/api/v1/controlled-registers`, `/api/v1/fiscal/documents` | RX.*, CTRL.*, FISCAL.* |
 
 At most one `PriceLists.IsDefault` per tenant. Sale complete resolves unit price preferring the default price list, computes tax from product tax profiles + active rates (ignores client `TaxAmount`), writes `InvoiceTaxes`, and includes tax in server totals. Product prices are deactivated via `EffectiveTo` (no hard delete).
+
+Reorder rules hold product/warehouse thresholds; low-stock candidates compare Available (QoH−Reserved) to `ReorderPoint`. `POST /api/v1/alerts/evaluate` creates `Open` LowStock/Expiry alerts (schema statuses/severities only) and optionally `NotificationLogs` when template code `ALERT_{AlertType}` exists.
 
 ## Angular UI
 
@@ -88,4 +95,4 @@ npm start
 
 - App: http://127.0.0.1:43123  
 - Talks to API at `http://127.0.0.1:5329` (`web/src/environments/environment.ts`)  
-- Working slices: **Login**, **app shell**, **POS / Sales**, **Expenses**, **Suppliers** (+ ledger), **Supplier payments**, **Purchase returns**, **Price lists**, **Product prices**, **Tax profiles**
+- Working slices: **Login**, **app shell**, **POS / Sales**, **Expenses**, **Suppliers** (+ ledger), **Supplier payments**, **Purchase returns**, **Price lists**, **Product prices**, **Tax profiles**, **Reorder rules**, **Alerts**

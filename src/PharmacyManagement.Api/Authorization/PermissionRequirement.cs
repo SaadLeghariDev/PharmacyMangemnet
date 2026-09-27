@@ -37,6 +37,9 @@ public static class PermissionPolicies
             Add(PermissionCodes.InvView);
             Add(PermissionCodes.InvAdjust);
             Add(PermissionCodes.InvTransfer);
+            Add(PermissionCodes.InvReorder);
+            Add(PermissionCodes.AlertView);
+            Add(PermissionCodes.AlertManage);
             Add(PermissionCodes.ProcPo);
             Add(PermissionCodes.ProcGrn);
             Add(PermissionCodes.ProcSupplierPay);

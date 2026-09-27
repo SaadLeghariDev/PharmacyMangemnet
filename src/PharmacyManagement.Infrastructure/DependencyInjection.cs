@@ -50,6 +50,10 @@ public static class DependencyInjection
         services.AddScoped<IPriceListService, PriceListService>();
         services.AddScoped<IProductPriceService, ProductPriceService>();
         services.AddScoped<ITaxProfileService, TaxProfileService>();
+        services.AddScoped<IReorderRuleService, ReorderRuleService>();
+        services.AddScoped<IAlertRuleService, AlertRuleService>();
+        services.AddScoped<IAlertService, AlertService>();
+        services.AddScoped<INotificationTemplateService, NotificationTemplateService>();
         services.AddScoped<IDoctorService, DoctorService>();
         services.AddScoped<IPrescriptionService, PrescriptionService>();
         services.AddScoped<IControlledDrugService, ControlledDrugService>();

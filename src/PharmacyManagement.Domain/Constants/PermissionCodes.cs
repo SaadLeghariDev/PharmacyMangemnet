@@ -11,6 +11,9 @@ public static class PermissionCodes
     public const string InvView = "INV.VIEW";
     public const string InvAdjust = "INV.ADJUST";
     public const string InvTransfer = "INV.TRANSFER";
+    public const string InvReorder = "INV.REORDER";
+    public const string AlertView = "ALERT.VIEW";
+    public const string AlertManage = "ALERT.MANAGE";
     public const string ProcPo = "PROC.PO";
     public const string ProcGrn = "PROC.GRN";
     public const string ProcSupplierPay = "PROC.SUPPLIER_PAY";
@@ -66,6 +69,47 @@ public static class BatchStatuses
 {
     public const string Available = "Available";
     public const string Quarantine = "Quarantine";
+}
+
+public static class AlertTypes
+{
+    public const string LowStock = "LowStock";
+    public const string Expiry = "Expiry";
+
+    public static bool IsKnown(string? value) =>
+        string.Equals(value, LowStock, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(value, Expiry, StringComparison.OrdinalIgnoreCase);
+
+    public static bool IsExpiry(string? value) =>
+        string.Equals(value, Expiry, StringComparison.OrdinalIgnoreCase);
+
+    public static bool IsLowStock(string? value) =>
+        string.Equals(value, LowStock, StringComparison.OrdinalIgnoreCase);
+
+    public static string Normalize(string value) =>
+        IsExpiry(value) ? Expiry : LowStock;
+}
+
+public static class AlertSeverities
+{
+    public const string Info = "Info";
+    public const string Warning = "Warning";
+    public const string Critical = "Critical";
+}
+
+public static class AlertStatuses
+{
+    public const string Open = "Open";
+    public const string Acknowledged = "Acknowledged";
+    public const string Resolved = "Resolved";
+    public const string Dismissed = "Dismissed";
+}
+
+public static class NotificationLogStatuses
+{
+    public const string Pending = "Pending";
+    public const string Sent = "Sent";
+    public const string Failed = "Failed";
 }
 
 public static class AppClaimTypes

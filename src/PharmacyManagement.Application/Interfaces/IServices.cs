@@ -1,4 +1,5 @@
 using PharmacyManagement.Application.Common;
+using PharmacyManagement.Application.DTOs.Alerts;
 using PharmacyManagement.Application.DTOs.Auth;
 using PharmacyManagement.Application.DTOs.Cash;
 using PharmacyManagement.Application.DTOs.Controlled;
@@ -320,4 +321,39 @@ public interface IFiscalService
     Task<FiscalDocumentDto> CreateAsync(CreateFiscalDocumentRequest request, CancellationToken ct = default);
     Task<FiscalDocumentDto> SubmitAsync(long id, FiscalSubmitRequest request, CancellationToken ct = default);
     Task<FiscalDocumentDto> RetryAsync(long id, FiscalSubmitRequest request, CancellationToken ct = default);
+}
+
+public interface IReorderRuleService
+{
+    Task<PagedResult<ReorderRuleDto>> SearchAsync(ReorderRuleQuery query, CancellationToken ct = default);
+    Task<ReorderRuleDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<ReorderRuleDto> CreateAsync(CreateReorderRuleRequest request, CancellationToken ct = default);
+    Task<ReorderRuleDto> UpdateAsync(long id, UpdateReorderRuleRequest request, CancellationToken ct = default);
+    Task<PagedResult<LowStockCandidateDto>> GetLowStockCandidatesAsync(LowStockCandidateQuery query, CancellationToken ct = default);
+}
+
+public interface IAlertRuleService
+{
+    Task<PagedResult<AlertRuleDto>> SearchAsync(AlertRuleQuery query, CancellationToken ct = default);
+    Task<AlertRuleDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<AlertRuleDto> CreateAsync(CreateAlertRuleRequest request, CancellationToken ct = default);
+    Task<AlertRuleDto> UpdateAsync(long id, UpdateAlertRuleRequest request, CancellationToken ct = default);
+}
+
+public interface IAlertService
+{
+    Task<PagedResult<AlertDto>> SearchAsync(AlertQuery query, CancellationToken ct = default);
+    Task<AlertDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<AlertDto> AcknowledgeAsync(long id, CancellationToken ct = default);
+    Task<AlertDto> ResolveAsync(long id, CancellationToken ct = default);
+    Task<EvaluateAlertsResultDto> EvaluateAsync(CancellationToken ct = default);
+}
+
+public interface INotificationTemplateService
+{
+    Task<PagedResult<NotificationTemplateDto>> SearchAsync(NotificationTemplateQuery query, CancellationToken ct = default);
+    Task<NotificationTemplateDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<NotificationTemplateDto> CreateAsync(CreateNotificationTemplateRequest request, CancellationToken ct = default);
+    Task<NotificationTemplateDto> UpdateAsync(long id, UpdateNotificationTemplateRequest request, CancellationToken ct = default);
+    Task<PagedResult<NotificationLogDto>> SearchLogsAsync(NotificationLogQuery query, CancellationToken ct = default);
 }

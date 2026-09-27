@@ -77,6 +77,9 @@ INSERT INTO dbo.Permissions (Code, Name, Module, Description) VALUES
  (N'PRICE.EDIT', N'Edit Prices', N'Pricing', N'Create and update price lists and product prices'),
  (N'TAX.VIEW', N'View Tax', N'Tax', N'View tax profiles, rates, and product tax links'),
  (N'TAX.EDIT', N'Edit Tax', N'Tax', N'Create and update tax profiles, rates, and product tax links'),
+ (N'INV.REORDER', N'Manage Reorder Rules', N'Inventory', N'Create and update reorder thresholds and view low-stock candidates'),
+ (N'ALERT.VIEW', N'View Alerts', N'Alerts', N'View alert rules, alerts, and notification templates/logs'),
+ (N'ALERT.MANAGE', N'Manage Alerts', N'Alerts', N'Create alert rules, evaluate, acknowledge/resolve alerts, manage templates'),
  (N'RPT.VIEW', N'View Reports', N'Reports', N'Access operational reports');
 GO
 
@@ -119,6 +122,17 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'TAX.VIEW')
 IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'TAX.EDIT')
     INSERT INTO dbo.Permissions (Code, Name, Module, Description)
     VALUES (N'TAX.EDIT', N'Edit Tax', N'Tax', N'Create and update tax profiles, rates, and product tax links');
+
+/* Idempotent add for Phase 7 reorder + alerts permissions */
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'INV.REORDER')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'INV.REORDER', N'Manage Reorder Rules', N'Inventory', N'Create and update reorder thresholds and view low-stock candidates');
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'ALERT.VIEW')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'ALERT.VIEW', N'View Alerts', N'Alerts', N'View alert rules, alerts, and notification templates/logs');
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'ALERT.MANAGE')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'ALERT.MANAGE', N'Manage Alerts', N'Alerts', N'Create alert rules, evaluate, acknowledge/resolve alerts, manage templates');
 GO
 
 

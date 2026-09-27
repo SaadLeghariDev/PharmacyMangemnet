@@ -1,0 +1,175 @@
+<app-page-header
+  title="Reorder Rules"
+  subtitle="Set product/warehouse thresholds and review low-stock candidates against on-hand."
+>
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">New rule</app-button>
+</app-page-header>
+
+<div class="tabs">
+  <button type="button" class="tab" [class.active]="tab === 'rules'" (click)="setTab('rules')">Rules</button>
+  <button type="button" class="tab" [class.active]="tab === 'low-stock'" (click)="setTab('low-stock')">
+    Low stock
+  </button>
+</div>
+
+<div class="toolbar">
+  @if (tab === 'rules') {
+    <app-input
+      label="Search"
+      placeholder="SKU, product, warehouse…"
+      [(ngModel)]="search"
+      (keydown)="$event.key === 'Enter' && applyFilters()"
+    />
+  }
+  <app-select label="Branch" [options]="branchOptions" [(ngModel)]="branchFilter" />
+  @if (tab === 'rules') {
+    <app-select label="Status" [options]="activeOptions" [(ngModel)]="activeFilter" />
+  }
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (tab === 'rules' && !rows().length) {
+  <app-empty-state
+    title="No reorder rules"
+    message="Create a rule to track minimum and reorder thresholds by warehouse."
+    actionLabel="New rule"
+    (action)="openCreate()"
+  />
+} @else if (tab === 'low-stock' && !lowStockRows().length) {
+  <app-empty-state
+    title="No low-stock candidates"
+    message="All active reorder rules are currently above their reorder point."
+  />
+} @else if (tab === 'rules') {
+  <app-table
+    [columns]="columns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>
+          <div class="primary">{{ row.productName }}</div>
+          <div class="muted">{{ row.productSku }}</div>
+        </td>
+        <td>{{ row.warehouseCode }}</td>
+        <td>{{ row.minimumStock }}</td>
+        <td>{{ row.reorderPoint }}</td>
+        <td>{{ row.reorderQuantity }}</td>
+        <td>{{ row.preferredSupplierName || '—' }}</td>
+        <td>
+          <app-badge [tone]="row.isActive ? 'success' : 'warning'">
+            {{ row.isActive ? 'Active' : 'Inactive' }}
+          </app-badge>
+        </td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openEdit(row)">Edit</app-button>
+        </td>
+      </tr>
+    }
+  </app-table>
+} @else {
+  <app-table
+    [columns]="lowStockColumns"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of lowStockRows(); track row.reorderRuleId) {
+      <tr>
+        <td>
+          <div class="primary">{{ row.productName }}</div>
+          <div class="muted">{{ row.productSku }}</div>
+        </td>
+        <td>{{ row.warehouseCode }}</td>
+        <td>{{ row.availableQuantity }}</td>
+        <td>{{ row.reorderPoint }}</td>
+        <td>
+          <app-badge tone="warning">{{ row.shortageQuantity }}</app-badge>
+        </td>
+        <td>{{ row.reorderQuantity }}</td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal
+  [open]="modalOpen()"
+  [title]="editingId == null ? 'New reorder rule' : 'Edit reorder rule'"
+  size="md"
+  (closed)="closeModal()"
+>
+  <div class="form-grid">
+    @if (editingId == null) {
+      <app-select
+        label="Branch"
+        [required]="true"
+        [options]="branchOptions"
+        [(ngModel)]="formBranchId"
+        (ngModelChange)="onBranchChange($event)"
+        [error]="formErrors['branch'] || ''"
+      />
+      <app-select
+        label="Warehouse"
+        [required]="true"
+        [options]="warehouseOptions"
+        [(ngModel)]="formWarehouseId"
+        [error]="formErrors['warehouse'] || ''"
+      />
+      <app-select
+        label="Product"
+        [required]="true"
+        [options]="productOptions"
+        [(ngModel)]="formProductId"
+        [error]="formErrors['product'] || ''"
+      />
+    }
+    <app-select
+      label="Preferred supplier"
+      [required]="true"
+      [options]="supplierOptions"
+      [(ngModel)]="formSupplierId"
+      [error]="formErrors['supplier'] || ''"
+    />
+    <app-input label="Minimum stock" type="number" [(ngModel)]="formMinimum" />
+    <app-input
+      label="Maximum stock"
+      type="number"
+      [(ngModel)]="formMaximum"
+      [error]="formErrors['maximum'] || ''"
+    />
+    <app-input label="Reorder point" type="number" [(ngModel)]="formReorderPoint" />
+    <app-input
+      label="Reorder quantity"
+      type="number"
+      [(ngModel)]="formReorderQty"
+      [error]="formErrors['qty'] || ''"
+    />
+    <label class="check">
+      <input type="checkbox" [(ngModel)]="formIsActive" />
+      Active
+    </label>
+  </div>
+  <div modal-footer class="modal-actions">
+    <app-button variant="ghost" (clicked)="closeModal()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="save()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>

@@ -10,6 +10,8 @@ import { SupplierLedgerPageComponent } from './features/suppliers/supplier-ledge
 import { PriceListsPageComponent } from './features/price-lists/price-lists-page.component';
 import { ProductPricesPageComponent } from './features/product-prices/product-prices-page.component';
 import { TaxProfilesPageComponent } from './features/tax-profiles/tax-profiles-page.component';
+import { ReorderRulesPageComponent } from './features/reorder-rules/reorder-rules-page.component';
+import { AlertsPageComponent } from './features/alerts/alerts-page.component';
 import { ListPageComponent } from './features/stub/list-page.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { ShellComponent } from './layout/shell.component';
@@ -30,6 +32,7 @@ export const routes: Routes = [
       { path: 'pos', component: PosComponent },
       { path: 'products', component: ListPageComponent, data: { title: 'Products', kind: 'products' } },
       { path: 'inventory', component: ListPageComponent, data: { title: 'Inventory', kind: 'inventory' } },
+      { path: 'reorder-rules', component: ReorderRulesPageComponent },
       { path: 'purchases', component: ListPageComponent, data: { title: 'Purchases', kind: 'purchases' } },
       { path: 'suppliers', component: SuppliersPageComponent },
       { path: 'suppliers/:id/ledger', component: SupplierLedgerPageComponent },
@@ -45,6 +48,7 @@ export const routes: Routes = [
       { path: 'price-lists', component: PriceListsPageComponent },
       { path: 'product-prices', component: ProductPricesPageComponent },
       { path: 'tax-profiles', component: TaxProfilesPageComponent },
+      { path: 'alerts', component: AlertsPageComponent },
       { path: 'reports', component: ListPageComponent, data: { title: 'Reports', kind: 'reports' } },
       { path: 'users', component: ListPageComponent, data: { title: 'Users & Roles', kind: 'users' } },
       { path: 'branches', component: ListPageComponent, data: { title: 'Branches', kind: 'branches' } },
