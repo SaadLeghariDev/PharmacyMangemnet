@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -32,6 +33,7 @@ try
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
+            options.MapInboundClaims = false;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
@@ -41,7 +43,9 @@ try
                 ValidIssuer = jwt.Issuer,
                 ValidAudience = jwt.Audience,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
-                ClockSkew = TimeSpan.FromMinutes(1)
+                ClockSkew = TimeSpan.FromMinutes(1),
+                NameClaimType = ClaimTypes.Name,
+                RoleClaimType = ClaimTypes.Role
             };
         });
 
