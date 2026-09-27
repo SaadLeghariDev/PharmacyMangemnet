@@ -8,10 +8,12 @@ using PharmacyManagement.Application.DTOs.Fiscal;
 using PharmacyManagement.Application.DTOs.Inventory;
 using PharmacyManagement.Application.DTOs.Organization;
 using PharmacyManagement.Application.DTOs.Prescriptions;
+using PharmacyManagement.Application.DTOs.Pricing;
 using PharmacyManagement.Application.DTOs.Products;
 using PharmacyManagement.Application.DTOs.Procurement;
 using PharmacyManagement.Application.DTOs.Purchasing;
 using PharmacyManagement.Application.DTOs.Sales;
+using PharmacyManagement.Application.DTOs.Tax;
 
 namespace PharmacyManagement.Application.Interfaces;
 
@@ -207,6 +209,36 @@ public interface IExpenseService
     Task<ExpenseDto?> GetByIdAsync(long id, CancellationToken ct = default);
     Task<ExpenseDto> CreateAsync(CreateExpenseRequest request, CancellationToken ct = default);
     Task<ExpenseDto> UpdateAsync(long id, UpdateExpenseRequest request, CancellationToken ct = default);
+}
+
+public interface IPriceListService
+{
+    Task<PagedResult<PriceListDto>> SearchAsync(PriceListQuery query, CancellationToken ct = default);
+    Task<PriceListDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<PriceListDto> CreateAsync(CreatePriceListRequest request, CancellationToken ct = default);
+    Task<PriceListDto> UpdateAsync(long id, UpdatePriceListRequest request, CancellationToken ct = default);
+}
+
+public interface IProductPriceService
+{
+    Task<PagedResult<ProductPriceDto>> SearchAsync(ProductPriceQuery query, CancellationToken ct = default);
+    Task<ProductPriceDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<ProductPriceDto> CreateAsync(CreateProductPriceRequest request, CancellationToken ct = default);
+    Task<ProductPriceDto> UpdateAsync(long id, UpdateProductPriceRequest request, CancellationToken ct = default);
+}
+
+public interface ITaxProfileService
+{
+    Task<PagedResult<TaxProfileDto>> SearchAsync(TaxProfileQuery query, CancellationToken ct = default);
+    Task<TaxProfileDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<TaxProfileDto> CreateAsync(CreateTaxProfileRequest request, CancellationToken ct = default);
+    Task<TaxProfileDto> UpdateAsync(long id, UpdateTaxProfileRequest request, CancellationToken ct = default);
+    Task<IReadOnlyList<TaxRateDto>> GetRatesAsync(long taxProfileId, CancellationToken ct = default);
+    Task<TaxRateDto> AddRateAsync(long taxProfileId, CreateTaxRateRequest request, CancellationToken ct = default);
+    Task<TaxRateDto> UpdateRateAsync(long taxProfileId, long rateId, UpdateTaxRateRequest request, CancellationToken ct = default);
+    Task<IReadOnlyList<ProductTaxProfileDto>> GetProductTaxProfilesAsync(long productId, CancellationToken ct = default);
+    Task<IReadOnlyList<ProductTaxProfileDto>> ReplaceProductTaxProfilesAsync(
+        long productId, ReplaceProductTaxProfilesRequest request, CancellationToken ct = default);
 }
 
 public interface IHeldSaleService

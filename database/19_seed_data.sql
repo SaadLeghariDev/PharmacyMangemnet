@@ -73,6 +73,10 @@ INSERT INTO dbo.Permissions (Code, Name, Module, Description) VALUES
  (N'FIN.JOURNAL', N'Post Journals', N'Finance', N'Post journal entries'),
  (N'FIN.CASH', N'Cash Shift', N'Finance', N'Open and close cash shifts'),
  (N'FIN.EXPENSE', N'Manage Expenses', N'Finance', N'Create and list expenses and categories'),
+ (N'PRICE.VIEW', N'View Prices', N'Pricing', N'View price lists and product prices'),
+ (N'PRICE.EDIT', N'Edit Prices', N'Pricing', N'Create and update price lists and product prices'),
+ (N'TAX.VIEW', N'View Tax', N'Tax', N'View tax profiles, rates, and product tax links'),
+ (N'TAX.EDIT', N'Edit Tax', N'Tax', N'Create and update tax profiles, rates, and product tax links'),
  (N'RPT.VIEW', N'View Reports', N'Reports', N'Access operational reports');
 GO
 
@@ -101,7 +105,22 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'PROC.SUPPLIER_PAY')
 IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'PROC.SUPPLIER_RETURN')
     INSERT INTO dbo.Permissions (Code, Name, Module, Description)
     VALUES (N'PROC.SUPPLIER_RETURN', N'Supplier Returns', N'Procurement', N'Draft, post, and cancel supplier returns');
+
+/* Idempotent add for Phase 6 pricing + tax permissions */
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'PRICE.VIEW')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'PRICE.VIEW', N'View Prices', N'Pricing', N'View price lists and product prices');
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'PRICE.EDIT')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'PRICE.EDIT', N'Edit Prices', N'Pricing', N'Create and update price lists and product prices');
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'TAX.VIEW')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'TAX.VIEW', N'View Tax', N'Tax', N'View tax profiles, rates, and product tax links');
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'TAX.EDIT')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'TAX.EDIT', N'Edit Tax', N'Tax', N'Create and update tax profiles, rates, and product tax links');
 GO
+
 
 /* Minimal demo org for tests */
 DECLARE @TenantId BIGINT, @BranchId BIGINT, @WhId BIGINT, @LocId BIGINT, @CounterId BIGINT, @TerminalId BIGINT, @UserId BIGINT, @RoleId BIGINT;

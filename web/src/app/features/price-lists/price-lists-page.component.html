@@ -1,0 +1,106 @@
+<app-page-header
+  title="Price Lists"
+  subtitle="Manage tenant price lists. Only one list can be the default."
+>
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">New price list</app-button>
+</app-page-header>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="Name or type…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  <app-select label="Status" [options]="activeOptions" [(ngModel)]="activeFilter" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state
+    title="No price lists found"
+    message="Create a price list to start assigning product prices."
+    actionLabel="New price list"
+    (action)="openCreate()"
+  />
+} @else {
+  <app-table
+    [columns]="columns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>{{ row.name }}</td>
+        <td>{{ row.priceType || '—' }}</td>
+        <td>{{ row.currencyCode }}</td>
+        <td>
+          @if (row.isDefault) {
+            <app-badge tone="info">Default</app-badge>
+          } @else {
+            —
+          }
+        </td>
+        <td>
+          <app-badge [tone]="row.isActive ? 'success' : 'warning'">
+            {{ row.isActive ? 'Active' : 'Inactive' }}
+          </app-badge>
+        </td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openEdit(row)">Edit</app-button>
+        </td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal
+  [open]="modalOpen()"
+  [title]="editingId == null ? 'New price list' : 'Edit price list'"
+  size="md"
+  (closed)="closeModal()"
+>
+  <div class="form-grid">
+    <app-input
+      label="Name"
+      [required]="true"
+      [(ngModel)]="formName"
+      [error]="formErrors['name'] || ''"
+    />
+    <app-input label="Price type" placeholder="Retail, Wholesale…" [(ngModel)]="formPriceType" />
+    <app-input
+      label="Currency"
+      [required]="true"
+      [(ngModel)]="formCurrency"
+      [error]="formErrors['currency'] || ''"
+    />
+    <label class="check">
+      <input type="checkbox" [(ngModel)]="formIsDefault" />
+      Set as default price list
+    </label>
+    <label class="check">
+      <input type="checkbox" [(ngModel)]="formIsActive" />
+      Active
+    </label>
+  </div>
+  <div modal-footer class="modal-actions">
+    <app-button variant="ghost" (clicked)="closeModal()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="save()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>

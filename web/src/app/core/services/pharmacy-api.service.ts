@@ -10,9 +10,13 @@ import {
   CounterDto,
   CreateExpenseCategoryRequest,
   CreateExpenseRequest,
+  CreatePriceListRequest,
+  CreateProductPriceRequest,
   CreateSaleRequest,
   CreateSupplierPaymentRequest,
   CreateSupplierReturnRequest,
+  CreateTaxProfileRequest,
+  CreateTaxRateRequest,
   ExpenseCategoryDto,
   ExpenseDto,
   ExpenseSearchParams,
@@ -21,7 +25,13 @@ import {
   HoldSaleRequest,
   PagedResult,
   PosTerminalDto,
+  PriceListDto,
+  PriceListSearchParams,
   ProductDto,
+  ProductPriceDto,
+  ProductPriceSearchParams,
+  ProductTaxProfileDto,
+  ReplaceProductTaxProfilesRequest,
   SaleDto,
   SaleReceiptDto,
   SupplierDto,
@@ -31,7 +41,14 @@ import {
   SupplierPaymentSearchParams,
   SupplierReturnDto,
   SupplierReturnSearchParams,
+  TaxProfileDto,
+  TaxProfileSearchParams,
+  TaxRateDto,
   UpdateExpenseCategoryRequest,
+  UpdatePriceListRequest,
+  UpdateProductPriceRequest,
+  UpdateTaxProfileRequest,
+  UpdateTaxRateRequest,
   WarehouseDto,
 } from '../models/api.models';
 
@@ -290,6 +307,129 @@ export class PharmacyApiService {
   cancelSupplierReturn(id: number): Observable<SupplierReturnDto> {
     return this.http
       .post<ApiResponse<SupplierReturnDto>>(`${this.base}/api/v1/supplier-returns/${id}/cancel`, {})
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchPriceLists(params: PriceListSearchParams = {}): Observable<PagedResult<PriceListDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    if (params.isDefault != null) httpParams = httpParams.set('isDefault', params.isDefault);
+    return this.http
+      .get<ApiResponse<PagedResult<PriceListDto>>>(`${this.base}/api/v1/price-lists`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createPriceList(request: CreatePriceListRequest): Observable<PriceListDto> {
+    return this.http
+      .post<ApiResponse<PriceListDto>>(`${this.base}/api/v1/price-lists`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updatePriceList(id: number, request: UpdatePriceListRequest): Observable<PriceListDto> {
+    return this.http
+      .put<ApiResponse<PriceListDto>>(`${this.base}/api/v1/price-lists/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchProductPrices(params: ProductPriceSearchParams = {}): Observable<PagedResult<ProductPriceDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.productId != null) httpParams = httpParams.set('productId', params.productId);
+    if (params.priceListId != null) httpParams = httpParams.set('priceListId', params.priceListId);
+    if (params.productUnitId != null) httpParams = httpParams.set('productUnitId', params.productUnitId);
+    if (params.activeOnly != null) httpParams = httpParams.set('activeOnly', params.activeOnly);
+    return this.http
+      .get<ApiResponse<PagedResult<ProductPriceDto>>>(`${this.base}/api/v1/product-prices`, {
+        params: httpParams,
+      })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createProductPrice(request: CreateProductPriceRequest): Observable<ProductPriceDto> {
+    return this.http
+      .post<ApiResponse<ProductPriceDto>>(`${this.base}/api/v1/product-prices`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateProductPrice(id: number, request: UpdateProductPriceRequest): Observable<ProductPriceDto> {
+    return this.http
+      .put<ApiResponse<ProductPriceDto>>(`${this.base}/api/v1/product-prices/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchTaxProfiles(params: TaxProfileSearchParams = {}): Observable<PagedResult<TaxProfileDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    return this.http
+      .get<ApiResponse<PagedResult<TaxProfileDto>>>(`${this.base}/api/v1/tax-profiles`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getTaxProfile(id: number): Observable<TaxProfileDto> {
+    return this.http
+      .get<ApiResponse<TaxProfileDto>>(`${this.base}/api/v1/tax-profiles/${id}`)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createTaxProfile(request: CreateTaxProfileRequest): Observable<TaxProfileDto> {
+    return this.http
+      .post<ApiResponse<TaxProfileDto>>(`${this.base}/api/v1/tax-profiles`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateTaxProfile(id: number, request: UpdateTaxProfileRequest): Observable<TaxProfileDto> {
+    return this.http
+      .put<ApiResponse<TaxProfileDto>>(`${this.base}/api/v1/tax-profiles/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  listTaxRates(profileId: number): Observable<TaxRateDto[]> {
+    return this.http
+      .get<ApiResponse<TaxRateDto[]>>(`${this.base}/api/v1/tax-profiles/${profileId}/rates`)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  addTaxRate(profileId: number, request: CreateTaxRateRequest): Observable<TaxRateDto> {
+    return this.http
+      .post<ApiResponse<TaxRateDto>>(`${this.base}/api/v1/tax-profiles/${profileId}/rates`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateTaxRate(
+    profileId: number,
+    rateId: number,
+    request: UpdateTaxRateRequest,
+  ): Observable<TaxRateDto> {
+    return this.http
+      .put<ApiResponse<TaxRateDto>>(`${this.base}/api/v1/tax-profiles/${profileId}/rates/${rateId}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getProductTaxProfiles(productId: number): Observable<ProductTaxProfileDto[]> {
+    return this.http
+      .get<ApiResponse<ProductTaxProfileDto[]>>(
+        `${this.base}/api/v1/products/${productId}/tax-profiles`,
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  replaceProductTaxProfiles(
+    productId: number,
+    request: ReplaceProductTaxProfilesRequest,
+  ): Observable<ProductTaxProfileDto[]> {
+    return this.http
+      .put<ApiResponse<ProductTaxProfileDto[]>>(
+        `${this.base}/api/v1/products/${productId}/tax-profiles`,
+        request,
+      )
       .pipe(map((r) => this.unwrap(r)));
   }
 

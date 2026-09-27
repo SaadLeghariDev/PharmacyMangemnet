@@ -7,6 +7,9 @@ import { SupplierPaymentsPageComponent } from './features/supplier-payments/supp
 import { PurchaseReturnsPageComponent } from './features/purchase-returns/purchase-returns-page.component';
 import { SuppliersPageComponent } from './features/suppliers/suppliers-page.component';
 import { SupplierLedgerPageComponent } from './features/suppliers/supplier-ledger-page.component';
+import { PriceListsPageComponent } from './features/price-lists/price-lists-page.component';
+import { ProductPricesPageComponent } from './features/product-prices/product-prices-page.component';
+import { TaxProfilesPageComponent } from './features/tax-profiles/tax-profiles-page.component';
 import { ListPageComponent } from './features/stub/list-page.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { ShellComponent } from './layout/shell.component';
@@ -39,6 +42,9 @@ export const routes: Routes = [
       },
       { path: 'purchase-returns', component: PurchaseReturnsPageComponent },
       { path: 'expenses', component: ExpensesPageComponent },
+      { path: 'price-lists', component: PriceListsPageComponent },
+      { path: 'product-prices', component: ProductPricesPageComponent },
+      { path: 'tax-profiles', component: TaxProfilesPageComponent },
       { path: 'reports', component: ListPageComponent, data: { title: 'Reports', kind: 'reports' } },
       { path: 'users', component: ListPageComponent, data: { title: 'Users & Roles', kind: 'users' } },
       { path: 'branches', component: ListPageComponent, data: { title: 'Branches', kind: 'branches' } },

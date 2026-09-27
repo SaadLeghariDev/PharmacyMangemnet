@@ -21,6 +21,10 @@ public static class PermissionCodes
     public const string PosVoid = "POS.VOID";
     public const string FinCash = "FIN.CASH";
     public const string FinExpense = "FIN.EXPENSE";
+    public const string PriceView = "PRICE.VIEW";
+    public const string PriceEdit = "PRICE.EDIT";
+    public const string TaxView = "TAX.VIEW";
+    public const string TaxEdit = "TAX.EDIT";
     public const string CustView = "CUST.VIEW";
     public const string CustEdit = "CUST.EDIT";
     public const string RxDispense = "RX.DISPENSE";

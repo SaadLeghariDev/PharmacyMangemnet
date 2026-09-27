@@ -463,3 +463,150 @@ export interface SupplierLedgerSearchParams {
   fromDate?: string | null;
   toDate?: string | null;
 }
+
+export interface PriceListDto {
+  id: number;
+  tenantId: number;
+  name: string;
+  priceType?: string | null;
+  currencyCode: string;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+export interface CreatePriceListRequest {
+  name: string;
+  priceType?: string | null;
+  currencyCode: string;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+export interface UpdatePriceListRequest {
+  name: string;
+  priceType?: string | null;
+  currencyCode: string;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+export interface PriceListSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  isActive?: boolean | null;
+  isDefault?: boolean | null;
+}
+
+export interface ProductPriceDto {
+  id: number;
+  priceListId: number;
+  priceListName?: string | null;
+  priceListIsDefault: boolean;
+  productId: number;
+  productSku?: string | null;
+  productName?: string | null;
+  productUnitId: number;
+  unitName?: string | null;
+  purchasePrice: number;
+  salePrice: number;
+  mrp: number;
+  discountPercent: number;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+}
+
+export interface CreateProductPriceRequest {
+  priceListId: number;
+  productId: number;
+  productUnitId: number;
+  purchasePrice: number;
+  salePrice: number;
+  mrp: number;
+  discountPercent: number;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+}
+
+export interface UpdateProductPriceRequest {
+  purchasePrice: number;
+  salePrice: number;
+  mrp: number;
+  discountPercent: number;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+}
+
+export interface ProductPriceSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  productId?: number | null;
+  priceListId?: number | null;
+  productUnitId?: number | null;
+  activeOnly?: boolean | null;
+}
+
+export interface TaxRateDto {
+  id: number;
+  taxProfileId: number;
+  rate: number;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  isActive: boolean;
+}
+
+export interface TaxProfileDto {
+  id: number;
+  name: string;
+  taxType?: string | null;
+  description?: string | null;
+  isActive: boolean;
+  rates: TaxRateDto[];
+}
+
+export interface CreateTaxProfileRequest {
+  name: string;
+  taxType?: string | null;
+  description?: string | null;
+  isActive: boolean;
+}
+
+export interface UpdateTaxProfileRequest {
+  name: string;
+  taxType?: string | null;
+  description?: string | null;
+  isActive: boolean;
+}
+
+export interface CreateTaxRateRequest {
+  rate: number;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  isActive: boolean;
+}
+
+export interface UpdateTaxRateRequest {
+  rate: number;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  isActive: boolean;
+}
+
+export interface TaxProfileSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  isActive?: boolean | null;
+}
+
+export interface ProductTaxProfileDto {
+  taxProfileId: number;
+  name: string;
+  taxType?: string | null;
+  isActive: boolean;
+}
+
+export interface ReplaceProductTaxProfilesRequest {
+  taxProfileIds: number[];
+}

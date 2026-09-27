@@ -1,0 +1,195 @@
+<app-page-header
+  title="Tax Profiles"
+  subtitle="Configure tax profiles and rates, and assign them to products for sale tax."
+>
+  <app-button variant="secondary" size="sm" (clicked)="openAssign()">Assign to product</app-button>
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">New tax profile</app-button>
+</app-page-header>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="Name or type…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  <app-select label="Status" [options]="activeOptions" [(ngModel)]="activeFilter" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state
+    title="No tax profiles found"
+    message="Create a tax profile and add an active rate before assigning to products."
+    actionLabel="New tax profile"
+    (action)="openCreate()"
+  />
+} @else {
+  <app-table
+    [columns]="columns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>{{ row.name }}</td>
+        <td>{{ row.taxType || '—' }}</td>
+        <td>{{ row.description || '—' }}</td>
+        <td>
+          <app-badge [tone]="row.isActive ? 'success' : 'warning'">
+            {{ row.isActive ? 'Active' : 'Inactive' }}
+          </app-badge>
+        </td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openRates(row)">Rates</app-button>
+          <app-button variant="ghost" size="sm" (clicked)="openEdit(row)">Edit</app-button>
+        </td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal
+  [open]="profileModalOpen()"
+  [title]="editingId == null ? 'New tax profile' : 'Edit tax profile'"
+  size="md"
+  (closed)="closeProfileModal()"
+>
+  <div class="form-grid">
+    <app-input
+      label="Name"
+      [required]="true"
+      [(ngModel)]="formName"
+      [error]="formErrors['name'] || ''"
+    />
+    <app-input label="Tax type" placeholder="GST, VAT…" [(ngModel)]="formTaxType" />
+    <app-input label="Description" [(ngModel)]="formDescription" />
+    <label class="check">
+      <input type="checkbox" [(ngModel)]="formIsActive" />
+      Active
+    </label>
+  </div>
+  <div modal-footer>
+    <app-button variant="ghost" (clicked)="closeProfileModal()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="saveProfile()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>
+
+<app-modal
+  [open]="ratesModalOpen()"
+  [title]="'Rates — ' + ratesProfileName"
+  size="lg"
+  (closed)="closeRates()"
+>
+  <div class="form-grid compact">
+    <app-input
+      label="Rate %"
+      type="number"
+      [required]="true"
+      [(ngModel)]="rateValue"
+      [error]="rateErrors['rate'] || ''"
+    />
+    <app-input
+      label="Effective from"
+      type="date"
+      [required]="true"
+      [(ngModel)]="rateFrom"
+      [error]="rateErrors['from'] || ''"
+    />
+    <app-input label="Effective to" type="date" [(ngModel)]="rateTo" />
+    <label class="check">
+      <input type="checkbox" [(ngModel)]="rateActive" />
+      Active
+    </label>
+    <div class="toolbar-actions">
+      <app-button variant="ghost" size="sm" (clicked)="resetRateForm()">Reset</app-button>
+      <app-button variant="primary" size="sm" (clicked)="saveRate()" [loading]="saving()">
+        {{ rateEditingId == null ? 'Add rate' : 'Update rate' }}
+      </app-button>
+    </div>
+  </div>
+
+  <table class="rates-table">
+    <thead>
+      <tr>
+        <th>Rate %</th>
+        <th>From</th>
+        <th>To</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (rate of rates(); track rate.id) {
+        <tr>
+          <td>{{ rate.rate }}</td>
+          <td>{{ rate.effectiveFrom | date: 'mediumDate' }}</td>
+          <td>{{ rate.effectiveTo ? (rate.effectiveTo | date: 'mediumDate') : '—' }}</td>
+          <td>
+            <app-badge [tone]="rate.isActive ? 'success' : 'warning'">
+              {{ rate.isActive ? 'Active' : 'Inactive' }}
+            </app-badge>
+          </td>
+          <td class="actions">
+            <app-button variant="ghost" size="sm" (clicked)="editRate(rate)">Edit</app-button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="5" class="muted">No rates yet.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</app-modal>
+
+<app-modal
+  [open]="assignModalOpen()"
+  title="Assign tax profiles to product"
+  size="md"
+  (closed)="closeAssign()"
+>
+  <div class="form-grid">
+    <app-select
+      label="Product"
+      [options]="productOptions()"
+      [(ngModel)]="assignProductId"
+      (ngModelChange)="loadAssigned()"
+    />
+    <div class="profile-checks">
+      @for (row of rows(); track row.id) {
+        <label class="check">
+          <input
+            type="checkbox"
+            [checked]="isSelected(row.id)"
+            (change)="toggleProfile(row.id, $any($event.target).checked)"
+          />
+          {{ row.name }}
+          @if (row.taxType) {
+            <span class="muted">({{ row.taxType }})</span>
+          }
+        </label>
+      }
+    </div>
+  </div>
+  <div modal-footer>
+    <app-button variant="ghost" (clicked)="closeAssign()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="saveAssign()" [loading]="saving()">Save assignment</app-button>
+  </div>
+</app-modal>

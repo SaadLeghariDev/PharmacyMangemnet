@@ -111,6 +111,7 @@ public sealed class CreateSaleLineRequest
     /// <summary>Optional; when omitted server resolves from product/batch sale price.</summary>
     public decimal? UnitPrice { get; set; }
     public decimal DiscountAmount { get; set; }
+    /// <summary>Ignored — tax is computed server-side from product tax profiles and active rates.</summary>
     public decimal TaxAmount { get; set; }
     /// <summary>Optional link to a prescription item for dispense workflow.</summary>
     public long? PrescriptionItemId { get; set; }

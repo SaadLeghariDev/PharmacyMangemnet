@@ -1,0 +1,134 @@
+<app-page-header
+  title="Product Prices"
+  subtitle="Assign sale prices by price list, product, and unit. Deactivate by setting Effective To."
+>
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">New product price</app-button>
+</app-page-header>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="SKU, product, list…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  <app-select label="Price list" [options]="priceListOptions()" [(ngModel)]="priceListFilter" />
+  <label class="check">
+    <input type="checkbox" [(ngModel)]="activeOnly" (change)="applyFilters()" />
+    Active only
+  </label>
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state
+    title="No product prices found"
+    message="Create a product price on the default list for POS resolution."
+    actionLabel="New product price"
+    (action)="openCreate()"
+  />
+} @else {
+  <app-table
+    [columns]="columns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>
+          <div class="primary">{{ row.productName || '—' }}</div>
+          <div class="muted">{{ row.productSku || '' }}</div>
+        </td>
+        <td>
+          {{ row.priceListName || '—' }}
+          @if (row.priceListIsDefault) {
+            <app-badge tone="info">Default</app-badge>
+          }
+        </td>
+        <td>{{ row.unitName || row.productUnitId }}</td>
+        <td class="num">{{ row.salePrice | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+        <td class="num">{{ row.mrp | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+        <td>{{ row.effectiveFrom | date: 'mediumDate' }}</td>
+        <td>{{ row.effectiveTo ? (row.effectiveTo | date: 'mediumDate') : '—' }}</td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openEdit(row)">Edit</app-button>
+          @if (!row.effectiveTo) {
+            <app-button variant="ghost" size="sm" (clicked)="deactivate(row)">Deactivate</app-button>
+          }
+        </td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal
+  [open]="modalOpen()"
+  [title]="editingId == null ? 'New product price' : 'Edit product price'"
+  size="md"
+  (closed)="closeModal()"
+>
+  <div class="form-grid">
+    @if (editingId == null) {
+      <app-select
+        label="Price list"
+        [required]="true"
+        [options]="createPriceListOptions()"
+        [(ngModel)]="formPriceListId"
+        [error]="formErrors['list'] || ''"
+      />
+      <app-select
+        label="Product"
+        [required]="true"
+        [options]="productOptions()"
+        [(ngModel)]="formProductId"
+        (ngModelChange)="onProductChange()"
+        [error]="formErrors['product'] || ''"
+      />
+      <app-input
+        label="Product unit id"
+        type="number"
+        [required]="true"
+        [(ngModel)]="formProductUnitId"
+        [error]="formErrors['unit'] || ''"
+      />
+    }
+    <app-input label="Purchase price" type="number" [(ngModel)]="formPurchase" />
+    <app-input
+      label="Sale price"
+      type="number"
+      [required]="true"
+      [(ngModel)]="formSale"
+      [error]="formErrors['sale'] || ''"
+    />
+    <app-input label="MRP" type="number" [(ngModel)]="formMrp" />
+    <app-input label="Discount %" type="number" [(ngModel)]="formDiscount" />
+    <app-input
+      label="Effective from"
+      type="date"
+      [required]="true"
+      [(ngModel)]="formFrom"
+      [error]="formErrors['from'] || ''"
+    />
+    <app-input label="Effective to" type="date" [(ngModel)]="formTo" />
+  </div>
+  <div modal-footer>
+    <app-button variant="ghost" (clicked)="closeModal()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="save()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>

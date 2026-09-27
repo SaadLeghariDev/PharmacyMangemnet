@@ -166,7 +166,8 @@ public sealed class SaleService(
                     tenantId, request.WarehouseId, lineReq, productUnit, lineIndex, ct);
 
                 var unitPrice = lineReq.UnitPrice
-                    ?? await ResolveUnitPriceAsync(lineReq.ProductId, lineReq.ProductUnitId, allocations, productUnit, ct);
+                    ?? await ResolveUnitPriceAsync(
+                        tenantId, lineReq.ProductId, lineReq.ProductUnitId, allocations, productUnit, ct);
 
                 var mrp = allocations.Count > 0
                     ? Math.Round(allocations[0].Batch.Mrp * productUnit.ConversionToBase, 4)
@@ -174,10 +175,14 @@ public sealed class SaleService(
 
                 var lineGross = Math.Round(lineReq.Quantity * unitPrice, 4);
                 var lineDiscount = Math.Round(lineReq.DiscountAmount, 4);
-                var lineTax = Math.Round(lineReq.TaxAmount, 4);
-                var lineNet = Math.Round(lineGross - lineDiscount + lineTax, 4);
-                if (lineNet < 0)
-                    throw new ValidationAppException([$"Line {lineIndex}: net amount cannot be negative."]);
+                // Server-side tax only — never trust client TaxAmount.
+                var taxableAmount = Math.Round(lineGross - lineDiscount, 4);
+                if (taxableAmount < 0)
+                    throw new ValidationAppException([$"Line {lineIndex}: taxable amount cannot be negative."]);
+
+                var lineTaxRows = await ComputeLineTaxesAsync(lineReq.ProductId, taxableAmount, ct);
+                var lineTax = Math.Round(lineTaxRows.Sum(t => t.TaxAmount), 4);
+                var lineNet = Math.Round(taxableAmount + lineTax, 4);
 
                 var baseQty = Math.Round(lineReq.Quantity * productUnit.ConversionToBase, 6);
                 var allocatedBase = allocations.Sum(a => a.BaseQuantity);
@@ -245,6 +250,18 @@ public sealed class SaleService(
                     loc.QuantityOnHand -= alloc.BaseQuantity;
                     loc.UpdatedAt = now;
                     pendingMovements.Add((loc, alloc.Batch, lineReq.ProductId, baseUnit.Id, alloc.BaseQuantity));
+                }
+
+                foreach (var taxRow in lineTaxRows)
+                {
+                    saleLine.InvoiceTaxes.Add(new InvoiceTaxis
+                    {
+                        Sale = sale,
+                        TaxProfileId = taxRow.TaxProfileId,
+                        TaxRate = taxRow.TaxRate,
+                        TaxableAmount = taxRow.TaxableAmount,
+                        TaxAmount = taxRow.TaxAmount
+                    });
                 }
 
                 sale.SaleLines.Add(saleLine);
@@ -716,6 +733,7 @@ public sealed class SaleService(
     }
 
     private async Task<decimal> ResolveUnitPriceAsync(
+        long tenantId,
         long productId,
         long productUnitId,
         List<BatchAllocation> allocations,
@@ -723,23 +741,82 @@ public sealed class SaleService(
         CancellationToken ct)
     {
         var now = DateTime.UtcNow;
-        var price = await db.ProductPrices.AsNoTracking()
+
+        // Prefer default price list for the tenant.
+        var defaultPrice = await db.ProductPrices.AsNoTracking()
             .Where(p =>
                 p.ProductId == productId &&
                 p.ProductUnitId == productUnitId &&
+                p.PriceList.TenantId == tenantId &&
+                p.PriceList.IsDefault &&
+                p.PriceList.IsActive &&
                 p.EffectiveFrom <= now &&
                 (p.EffectiveTo == null || p.EffectiveTo >= now))
             .OrderByDescending(p => p.EffectiveFrom)
             .Select(p => (decimal?)p.SalePrice)
             .FirstOrDefaultAsync(ct);
 
-        if (price is decimal p) return Math.Round(p, 4);
+        if (defaultPrice is decimal dp) return Math.Round(dp, 4);
+
+        // Fallback: any active price on an active tenant price list.
+        var anyPrice = await db.ProductPrices.AsNoTracking()
+            .Where(p =>
+                p.ProductId == productId &&
+                p.ProductUnitId == productUnitId &&
+                p.PriceList.TenantId == tenantId &&
+                p.PriceList.IsActive &&
+                p.EffectiveFrom <= now &&
+                (p.EffectiveTo == null || p.EffectiveTo >= now))
+            .OrderByDescending(p => p.EffectiveFrom)
+            .Select(p => (decimal?)p.SalePrice)
+            .FirstOrDefaultAsync(ct);
+
+        if (anyPrice is decimal ap) return Math.Round(ap, 4);
 
         if (allocations.Count > 0)
             return Math.Round(allocations[0].Batch.SalePrice * productUnit.ConversionToBase, 4);
 
         throw new ValidationAppException(["Unable to resolve unit price for product."]);
     }
+
+    private sealed record LineTaxCalc(long TaxProfileId, decimal TaxRate, decimal TaxableAmount, decimal TaxAmount);
+
+    private async Task<List<LineTaxCalc>> ComputeLineTaxesAsync(
+        long productId, decimal taxableAmount, CancellationToken ct)
+    {
+        if (taxableAmount <= 0) return [];
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var profiles = await db.Products.AsNoTracking()
+            .Where(p => p.Id == productId)
+            .SelectMany(p => p.TaxProfiles)
+            .Where(t => t.IsActive)
+            .Select(t => t.Id)
+            .Distinct()
+            .ToListAsync(ct);
+
+        var result = new List<LineTaxCalc>();
+        foreach (var profileId in profiles)
+        {
+            var rate = await db.TaxRates.AsNoTracking()
+                .Where(r =>
+                    r.TaxProfileId == profileId &&
+                    r.IsActive &&
+                    r.EffectiveFrom <= today &&
+                    (r.EffectiveTo == null || r.EffectiveTo >= today))
+                .OrderByDescending(r => r.EffectiveFrom)
+                .Select(r => (decimal?)r.Rate)
+                .FirstOrDefaultAsync(ct);
+
+            if (rate is not decimal rateValue) continue;
+
+            var taxAmount = Math.Round(taxableAmount * rateValue / 100m, 4);
+            result.Add(new LineTaxCalc(profileId, rateValue, taxableAmount, taxAmount));
+        }
+
+        return result;
+    }
+
 
     private async Task<Dictionary<long, PaymentMethod>> LoadPaymentMethodsAsync(
         IReadOnlyList<CreateSalePaymentRequest> payments,
