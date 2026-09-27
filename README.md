@@ -1,6 +1,6 @@
 # Pharmacy Management System
 
-Database-first pharmacy management platform. Phase 1 SQL Server DDL; Phase 2A Auth/Org/Products; Phase 2B Purchasing + Inventory; Phase 2C Sales/POS.
+Database-first pharmacy management platform. Phase 1 SQL Server DDL; Phase 2A Auth/Org/Products; Phase 2B Purchasing + Inventory; Phase 2C Sales/POS; Phase 2D Cash shifts + Sale void + Customer AR.
 
 ## Structure
 
@@ -30,16 +30,16 @@ database/                 # Phase 1 DDL (source of truth — no EF migrations)
 
 Docker default: `localhost,14333` / sa / `Your_strong_Password123`.
 
-## API (Phase 2C)
+## API (Phase 2D)
 
 ```bash
 dotnet restore
 dotnet build
-dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5309
+dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5319
 ```
 
-- Swagger: http://127.0.0.1:5309/swagger
-- Health: http://127.0.0.1:5309/health
+- Swagger: http://127.0.0.1:5319/swagger
+- Health: http://127.0.0.1:5319/health
 - Connection string key: `ConnectionStrings:PharmacyManagement`
 
 ### Modules
@@ -57,9 +57,12 @@ dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5309
 | Sales / POS | `/api/v1/sales` | `POS.SALE` |
 | Held sales | `/api/v1/held-sales` | `POS.HOLD` |
 | Sale returns | `/api/v1/sale-returns` | `POS.RETURN` |
+| Sale void | `/api/v1/sales/{id}/void` | `POS.VOID` |
+| Cash shifts | `/api/v1/cash-shifts` | `FIN.CASH` |
+| Customers / AR | `/api/v1/customers` | `CUST.VIEW` / `CUST.EDIT` |
 
 Document numbers use atomic `NumberSequences` increments (UPDLOCK) — never `MAX(Id)+1`.
-Sale invoices are terminal-scoped (`SALE` + `TerminalId`); returns are branch-scoped (`RETURN`).
+Sale invoices are terminal-scoped (`SALE` + `TerminalId`); returns are branch-scoped (`RETURN`); customer codes are tenant-scoped (`CUSTOMER`).
 
 ### Local SQL Express (PC)
 
@@ -77,6 +80,6 @@ Seed user `admin` has a placeholder password hash. In **Development**, password 
 dotnet test
 ```
 
-## Explicit non-goals (Phase 2C)
+## Explicit non-goals (Phase 2D)
 
-Void sales deep workflow, fiscal/FBR submit, cash shifts UI detail, prescription dispense, controlled-drug register posts, Angular UI, supplier returns, EF migrations, schema changes.
+Prescriptions / dispense, controlled-drug register, FBR/fiscal, Angular UI, supplier AR, EF migrations, schema changes.
