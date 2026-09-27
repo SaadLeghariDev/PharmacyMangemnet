@@ -30,6 +30,7 @@ export class ShellComponent {
     { path: '/sales-returns', label: 'Sales Returns', icon: 'SR' },
     { path: '/purchase-returns', label: 'Purchase Returns', icon: 'PRR' },
     { path: '/expenses', label: 'Expenses', icon: 'EX' },
+    { path: '/finance', label: 'Finance', icon: 'FN' },
     { path: '/price-lists', label: 'Price Lists', icon: 'PL' },
     { path: '/product-prices', label: 'Product Prices', icon: 'PP' },
     { path: '/tax-profiles', label: 'Tax Profiles', icon: 'TX' },

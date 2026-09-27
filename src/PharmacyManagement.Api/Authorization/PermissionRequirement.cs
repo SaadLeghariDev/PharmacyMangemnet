@@ -50,6 +50,8 @@ public static class PermissionPolicies
             Add(PermissionCodes.PosVoid);
             Add(PermissionCodes.FinCash);
             Add(PermissionCodes.FinExpense);
+            Add(PermissionCodes.FinCoa);
+            Add(PermissionCodes.FinJournal);
             Add(PermissionCodes.PriceView);
             Add(PermissionCodes.PriceEdit);
             Add(PermissionCodes.TaxView);

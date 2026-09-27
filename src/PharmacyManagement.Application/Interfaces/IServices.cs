@@ -6,6 +6,7 @@ using PharmacyManagement.Application.DTOs.Cash;
 using PharmacyManagement.Application.DTOs.Controlled;
 using PharmacyManagement.Application.DTOs.Customers;
 using PharmacyManagement.Application.DTOs.Expenses;
+using PharmacyManagement.Application.DTOs.Finance;
 using PharmacyManagement.Application.DTOs.Fiscal;
 using PharmacyManagement.Application.DTOs.Hardware;
 using PharmacyManagement.Application.DTOs.Inventory;
@@ -448,4 +449,27 @@ public interface IAttachmentService
 
     Task<PagedResult<EntityAttachmentDto>> SearchLinksAsync(EntityAttachmentQuery query, CancellationToken ct = default);
     Task<EntityAttachmentDto> LinkAsync(CreateEntityAttachmentRequest request, CancellationToken ct = default);
+}
+
+public interface IAccountTypeService
+{
+    Task<PagedResult<AccountTypeDto>> SearchAsync(AccountTypeQuery query, CancellationToken ct = default);
+}
+
+public interface IChartOfAccountService
+{
+    Task<PagedResult<ChartOfAccountDto>> SearchAsync(ChartOfAccountQuery query, CancellationToken ct = default);
+    Task<ChartOfAccountDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<ChartOfAccountDto> CreateAsync(CreateChartOfAccountRequest request, CancellationToken ct = default);
+    Task<ChartOfAccountDto> UpdateAsync(long id, UpdateChartOfAccountRequest request, CancellationToken ct = default);
+    Task<ChartOfAccountDto> DeactivateAsync(long id, CancellationToken ct = default);
+}
+
+public interface IJournalEntryService
+{
+    Task<PagedResult<JournalEntryDto>> SearchAsync(JournalEntryQuery query, CancellationToken ct = default);
+    Task<JournalEntryDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<JournalEntryDto> CreateDraftAsync(CreateJournalEntryRequest request, CancellationToken ct = default);
+    Task<JournalEntryDto> PostAsync(long id, CancellationToken ct = default);
+    Task<JournalEntryDto> ReverseAsync(long id, CancellationToken ct = default);
 }

@@ -71,6 +71,7 @@ INSERT INTO dbo.Permissions (Code, Name, Module, Description) VALUES
  (N'CTRL.MANAGE', N'Controlled Drugs', N'Controlled', N'Manage controlled registers'),
  (N'FISCAL.SUBMIT', N'Submit Fiscal', N'Fiscal', N'Create and submit FBR/fiscal documents'),
  (N'FIN.JOURNAL', N'Post Journals', N'Finance', N'Post journal entries'),
+ (N'FIN.COA', N'Manage Chart of Accounts', N'Finance', N'View account types and manage chart of accounts'),
  (N'FIN.CASH', N'Cash Shift', N'Finance', N'Open and close cash shifts'),
  (N'FIN.EXPENSE', N'Manage Expenses', N'Finance', N'Create and list expenses and categories'),
  (N'PRICE.VIEW', N'View Prices', N'Pricing', N'View price lists and product prices'),
@@ -147,6 +148,14 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'HW.MANAGE')
 IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'PRINT.MANAGE')
     INSERT INTO dbo.Permissions (Code, Name, Module, Description)
     VALUES (N'PRINT.MANAGE', N'Manage Print', N'Hardware', N'Manage print templates and barcode print jobs');
+
+/* Idempotent add for Phase 10 GL / accounting permissions */
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'FIN.COA')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'FIN.COA', N'Manage Chart of Accounts', N'Finance', N'View account types and manage chart of accounts');
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'FIN.JOURNAL')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'FIN.JOURNAL', N'Post Journals', N'Finance', N'Post journal entries');
 GO
 
 
@@ -268,6 +277,10 @@ IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND 
 IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND DocumentType = N'SUPPLIER_RETURN' AND BranchId = @BranchId AND TerminalId IS NULL)
     INSERT INTO dbo.NumberSequences (TenantId, BranchId, TerminalId, DocumentType, Prefix, CurrentNumber, NumberLength, ResetPeriod)
     VALUES (@TenantId, @BranchId, NULL, N'SUPPLIER_RETURN', N'SR-', 0, 6, N'Never');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND DocumentType = N'JOURNAL' AND BranchId = @BranchId AND TerminalId IS NULL)
+    INSERT INTO dbo.NumberSequences (TenantId, BranchId, TerminalId, DocumentType, Prefix, CurrentNumber, NumberLength, ResetPeriod)
+    VALUES (@TenantId, @BranchId, NULL, N'JOURNAL', N'JE-', 0, 6, N'Never');
 
 PRINT N'Seed data applied.';
 GO

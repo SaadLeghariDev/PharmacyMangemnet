@@ -26,6 +26,8 @@ import {
   FefoCandidateDto,
   HeldSaleDto,
   HoldSaleRequest,
+  JournalEntryDto,
+  JournalEntrySearchParams,
   LowStockCandidateDto,
   LowStockCandidateSearchParams,
   PagedResult,
@@ -43,10 +45,15 @@ import {
   AlertRuleDto,
   AlertRuleSearchParams,
   AlertSearchParams,
+  AccountTypeDto,
   AttachmentDto,
   AuditLogDto,
   AuditLogSearchParams,
   BarcodePrintJobDto,
+  ChartOfAccountDto,
+  ChartOfAccountSearchParams,
+  CreateChartOfAccountRequest,
+  CreateJournalEntryRequest,
   BarcodePrintJobSearchParams,
   BranchSettingDto,
   CreateAttachmentRequest,
@@ -92,6 +99,7 @@ import {
   UpdateAlertRuleRequest,
   UpdateBarcodePrintJobStatusRequest,
   UpdateBranchRequest,
+  UpdateChartOfAccountRequest,
   UpdateDeviceRequest,
   UpdateExpenseCategoryRequest,
   UpdatePriceListRequest,
@@ -937,6 +945,83 @@ export class PharmacyApiService {
   linkEntityAttachment(request: CreateEntityAttachmentRequest): Observable<EntityAttachmentDto> {
     return this.http
       .post<ApiResponse<EntityAttachmentDto>>(`${this.base}/api/v1/entity-attachments`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  listAccountTypes(search = '', pageSize = 50): Observable<AccountTypeDto[]> {
+    let params = new HttpParams().set('page', 1).set('pageSize', pageSize);
+    if (search.trim()) params = params.set('search', search.trim());
+    return this.http
+      .get<ApiResponse<PagedResult<AccountTypeDto>>>(`${this.base}/api/v1/account-types`, { params })
+      .pipe(map((r) => this.unwrap(r).items));
+  }
+
+  searchChartOfAccounts(params: ChartOfAccountSearchParams = {}): Observable<PagedResult<ChartOfAccountDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.accountTypeId != null) httpParams = httpParams.set('accountTypeId', params.accountTypeId);
+    if (params.parentAccountId != null) httpParams = httpParams.set('parentAccountId', params.parentAccountId);
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    return this.http
+      .get<ApiResponse<PagedResult<ChartOfAccountDto>>>(`${this.base}/api/v1/chart-of-accounts`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createChartOfAccount(request: CreateChartOfAccountRequest): Observable<ChartOfAccountDto> {
+    return this.http
+      .post<ApiResponse<ChartOfAccountDto>>(`${this.base}/api/v1/chart-of-accounts`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateChartOfAccount(id: number, request: UpdateChartOfAccountRequest): Observable<ChartOfAccountDto> {
+    return this.http
+      .put<ApiResponse<ChartOfAccountDto>>(`${this.base}/api/v1/chart-of-accounts/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  deactivateChartOfAccount(id: number): Observable<ChartOfAccountDto> {
+    return this.http
+      .post<ApiResponse<ChartOfAccountDto>>(`${this.base}/api/v1/chart-of-accounts/${id}/deactivate`, {})
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchJournalEntries(params: JournalEntrySearchParams = {}): Observable<PagedResult<JournalEntryDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.status) httpParams = httpParams.set('status', params.status);
+    if (params.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    return this.http
+      .get<ApiResponse<PagedResult<JournalEntryDto>>>(`${this.base}/api/v1/journal-entries`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getJournalEntry(id: number): Observable<JournalEntryDto> {
+    return this.http
+      .get<ApiResponse<JournalEntryDto>>(`${this.base}/api/v1/journal-entries/${id}`)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createJournalEntry(request: CreateJournalEntryRequest): Observable<JournalEntryDto> {
+    return this.http
+      .post<ApiResponse<JournalEntryDto>>(`${this.base}/api/v1/journal-entries`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  postJournalEntry(id: number): Observable<JournalEntryDto> {
+    return this.http
+      .post<ApiResponse<JournalEntryDto>>(`${this.base}/api/v1/journal-entries/${id}/post`, {})
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  reverseJournalEntry(id: number): Observable<JournalEntryDto> {
+    return this.http
+      .post<ApiResponse<JournalEntryDto>>(`${this.base}/api/v1/journal-entries/${id}/reverse`, {})
       .pipe(map((r) => this.unwrap(r)));
   }
 

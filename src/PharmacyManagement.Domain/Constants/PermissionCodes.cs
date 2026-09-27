@@ -24,6 +24,8 @@ public static class PermissionCodes
     public const string PosVoid = "POS.VOID";
     public const string FinCash = "FIN.CASH";
     public const string FinExpense = "FIN.EXPENSE";
+    public const string FinCoa = "FIN.COA";
+    public const string FinJournal = "FIN.JOURNAL";
     public const string PriceView = "PRICE.VIEW";
     public const string PriceEdit = "PRICE.EDIT";
     public const string TaxView = "TAX.VIEW";
@@ -52,6 +54,25 @@ public static class DocumentTypes
     public const string ControlledRegister = "CTRL_REGISTER";
     public const string Expense = "EXPENSE";
     public const string SupplierReturn = "SUPPLIER_RETURN";
+    public const string Journal = "JOURNAL";
+}
+
+public static class JournalEntryStatuses
+{
+    public const string Draft = "Draft";
+    public const string Posted = "Posted";
+    public const string Reversed = "Reversed";
+
+    private static readonly HashSet<string> Known = new(StringComparer.OrdinalIgnoreCase)
+    {
+        Draft, Posted, Reversed
+    };
+
+    public static bool IsKnown(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && Known.Contains(value);
+
+    public static string Normalize(string value) =>
+        Known.First(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
 }
 
 public static class MovementTypes

@@ -1,0 +1,235 @@
+<app-page-header
+  title="Finance"
+  subtitle="Chart of accounts and general ledger journals."
+>
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">
+    @if (tab === 'coa') {
+      New account
+    } @else {
+      New journal
+    }
+  </app-button>
+</app-page-header>
+
+<div class="tabs">
+  <button type="button" class="tab" [class.active]="tab === 'coa'" (click)="setTab('coa')">Chart of Accounts</button>
+  <button type="button" class="tab" [class.active]="tab === 'journals'" (click)="setTab('journals')">Journals</button>
+</div>
+
+<div class="toolbar" [class.toolbar-journals]="tab === 'journals'">
+  <app-input
+    label="Search"
+    [placeholder]="tab === 'coa' ? 'Code or name…' : 'Entry number or description…'"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  @if (tab === 'coa') {
+    <app-select label="Type" [options]="typeOptions()" [(ngModel)]="typeFilter" />
+    <app-select label="Active" [options]="activeOptions" [(ngModel)]="activeFilter" />
+  } @else {
+    <app-select label="Branch" [options]="branchOptions()" [(ngModel)]="branchFilter" />
+    <app-select label="Status" [options]="statusOptions" [(ngModel)]="statusFilter" />
+    <app-input label="From" type="date" [(ngModel)]="fromDate" />
+    <app-input label="To" type="date" [(ngModel)]="toDate" />
+  }
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (tab === 'coa' && !accounts().length) {
+  <app-empty-state
+    title="No accounts"
+    message="Add asset, liability, equity, revenue, and expense accounts for this tenant."
+    actionLabel="New account"
+    (action)="openCreate()"
+  />
+} @else if (tab === 'journals' && !journals().length) {
+  <app-empty-state
+    title="No journals"
+    message="Create a balanced draft journal, then post or reverse it."
+    actionLabel="New journal"
+    (action)="openCreate()"
+  />
+} @else if (tab === 'coa') {
+  <app-table
+    [columns]="coaColumns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of accounts(); track row.id) {
+      <tr>
+        <td class="mono">{{ row.code }}</td>
+        <td>
+          <div class="primary">{{ row.name }}</div>
+          @if (row.isSystemAccount) {
+            <div class="muted">System</div>
+          }
+        </td>
+        <td>{{ row.accountTypeName || '—' }}</td>
+        <td>{{ row.parentAccountCode ? row.parentAccountCode + ' — ' + row.parentAccountName : '—' }}</td>
+        <td>
+          <app-badge [tone]="row.isActive ? 'success' : 'neutral'">
+            {{ row.isActive ? 'Active' : 'Inactive' }}
+          </app-badge>
+        </td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openEditAccount(row)">Edit</app-button>
+          @if (row.isActive) {
+            <app-button variant="ghost" size="sm" (clicked)="deactivate(row)">Deactivate</app-button>
+          }
+        </td>
+      </tr>
+    }
+  </app-table>
+} @else {
+  <app-table
+    [columns]="journalColumns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of journals(); track row.id) {
+      <tr>
+        <td class="mono">{{ row.entryNumber }}</td>
+        <td>{{ row.entryDate | date: 'mediumDate' }}</td>
+        <td>{{ row.branchName || row.branchId }}</td>
+        <td>{{ row.description || '—' }}</td>
+        <td class="mono">{{ row.totalDebit | number: '1.2-4' }} / {{ row.totalCredit | number: '1.2-4' }}</td>
+        <td><app-badge [tone]="statusTone(row.status)">{{ row.status }}</app-badge></td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openDetail(row)">View</app-button>
+          @if (row.status === 'Draft') {
+            <app-button variant="ghost" size="sm" (clicked)="postJournal(row)">Post</app-button>
+          }
+          @if (row.status === 'Posted') {
+            <app-button variant="ghost" size="sm" (clicked)="reverseJournal(row)">Reverse</app-button>
+          }
+        </td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal
+  [open]="createOpen()"
+  [title]="tab === 'coa' ? (editingAccountId ? 'Edit account' : 'New account') : 'New journal draft'"
+  (closed)="createOpen.set(false)"
+>
+  @if (tab === 'coa') {
+    <div class="form-grid">
+      @if (!editingAccountId) {
+        <app-input label="Code" [(ngModel)]="coaCode" [error]="coaErrors['code'] || ''" />
+      } @else {
+        <div>
+          <div class="lbl">Code</div>
+          <div class="mono">{{ coaCode }}</div>
+        </div>
+      }
+      <app-input label="Name" [(ngModel)]="coaName" [error]="coaErrors['name'] || ''" />
+      <app-select label="Account type" [options]="typePickOptions()" [(ngModel)]="coaTypeId" />
+      <app-select label="Parent account" [options]="parentOptions()" [(ngModel)]="coaParentId" />
+      <label class="check">
+        <input type="checkbox" [(ngModel)]="coaActive" />
+        Active
+      </label>
+    </div>
+  } @else {
+    <div class="form-grid form-grid-journal">
+      <app-select label="Branch" [options]="branchPickOptions()" [(ngModel)]="jeBranchId" />
+      <app-input label="Entry date" type="date" [(ngModel)]="jeDate" [error]="jeErrors['date'] || ''" />
+      <app-input class="span-2" label="Description" [(ngModel)]="jeDescription" />
+    </div>
+    <div class="lines-header">
+      <h3>Lines</h3>
+      <app-button variant="secondary" size="sm" (clicked)="addLine()">Add line</app-button>
+    </div>
+    @if (jeErrors['lines']) {
+      <div class="field-error">{{ jeErrors['lines'] }}</div>
+    }
+    <div class="lines">
+      @for (line of jeLines; track $index; let i = $index) {
+        <div class="line-row">
+          <app-select label="Account" [options]="accountPickOptions()" [(ngModel)]="line.accountId" />
+          <app-input label="Debit" type="number" [(ngModel)]="line.debit" />
+          <app-input label="Credit" type="number" [(ngModel)]="line.credit" />
+          <app-input label="Memo" [(ngModel)]="line.description" />
+          <app-button variant="ghost" size="sm" (clicked)="removeLine(i)" [disabled]="jeLines.length <= 2">Remove</app-button>
+        </div>
+      }
+    </div>
+    <div class="totals">
+      <span>Debit total: <strong>{{ lineDebitTotal() | number: '1.2-4' }}</strong></span>
+      <span>Credit total: <strong>{{ lineCreditTotal() | number: '1.2-4' }}</strong></span>
+    </div>
+  }
+  <div class="modal-actions">
+    <app-button variant="ghost" (clicked)="createOpen.set(false)" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="saveCreate()" [loading]="saving()">
+      {{ tab === 'coa' ? 'Save' : 'Create draft' }}
+    </app-button>
+  </div>
+</app-modal>
+
+<app-modal [open]="detailOpen()" title="Journal detail" (closed)="detailOpen.set(false)">
+  @if (selectedJournal(); as je) {
+    <div class="detail-meta">
+      <div><span class="lbl">Number</span><div class="mono">{{ je.entryNumber }}</div></div>
+      <div><span class="lbl">Status</span><div><app-badge [tone]="statusTone(je.status)">{{ je.status }}</app-badge></div></div>
+      <div><span class="lbl">Date</span><div>{{ je.entryDate | date: 'medium' }}</div></div>
+      <div><span class="lbl">Branch</span><div>{{ je.branchName || je.branchId }}</div></div>
+      <div class="span-2"><span class="lbl">Description</span><div>{{ je.description || '—' }}</div></div>
+      @if (je.reversalOfEntryNumber) {
+        <div class="span-2"><span class="lbl">Reversal of</span><div class="mono">{{ je.reversalOfEntryNumber }}</div></div>
+      }
+    </div>
+    <table class="detail-lines">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Account</th>
+          <th>Debit</th>
+          <th>Credit</th>
+          <th>Memo</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (line of je.lines; track line.id) {
+          <tr>
+            <td>{{ line.lineNo }}</td>
+            <td>{{ line.accountCode }} — {{ line.accountName }}</td>
+            <td class="mono">{{ line.debit | number: '1.2-4' }}</td>
+            <td class="mono">{{ line.credit | number: '1.2-4' }}</td>
+            <td>{{ line.description || '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <div class="modal-actions">
+      @if (je.status === 'Draft') {
+        <app-button variant="primary" (clicked)="postJournal(je)">Post</app-button>
+      }
+      @if (je.status === 'Posted') {
+        <app-button variant="danger" (clicked)="reverseJournal(je)">Reverse</app-button>
+      }
+      <app-button variant="ghost" (clicked)="detailOpen.set(false)">Close</app-button>
+    </div>
+  }
+</app-modal>

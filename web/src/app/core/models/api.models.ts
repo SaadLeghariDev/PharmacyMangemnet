@@ -1195,3 +1195,103 @@ export interface EntityAttachmentSearchParams {
   entityId?: number | null;
   attachmentId?: number | null;
 }
+
+export interface AccountTypeDto {
+  id: number;
+  name: string;
+}
+
+export interface ChartOfAccountDto {
+  id: number;
+  tenantId: number;
+  parentAccountId?: number | null;
+  parentAccountCode?: string | null;
+  parentAccountName?: string | null;
+  code: string;
+  name: string;
+  accountTypeId: number;
+  accountTypeName?: string | null;
+  isSystemAccount: boolean;
+  isActive: boolean;
+}
+
+export interface ChartOfAccountSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  accountTypeId?: number | null;
+  parentAccountId?: number | null;
+  isActive?: boolean | null;
+}
+
+export interface CreateChartOfAccountRequest {
+  code: string;
+  name: string;
+  accountTypeId: number;
+  parentAccountId?: number | null;
+  isActive: boolean;
+}
+
+export interface UpdateChartOfAccountRequest {
+  name: string;
+  accountTypeId: number;
+  parentAccountId?: number | null;
+  isActive: boolean;
+}
+
+export interface JournalLineDto {
+  id: number;
+  lineNo: number;
+  accountId: number;
+  accountCode?: string | null;
+  accountName?: string | null;
+  debit: number;
+  credit: number;
+  description?: string | null;
+}
+
+export interface JournalEntryDto {
+  id: number;
+  tenantId: number;
+  branchId: number;
+  branchName?: string | null;
+  entryNumber: string;
+  entryDate: string;
+  referenceType?: string | null;
+  referenceId?: number | null;
+  description?: string | null;
+  status: string;
+  postedBy?: number | null;
+  postedAt?: string | null;
+  reversalOfEntryId?: number | null;
+  reversalOfEntryNumber?: string | null;
+  totalDebit: number;
+  totalCredit: number;
+  lines: JournalLineDto[];
+}
+
+export interface JournalEntrySearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  branchId?: number | null;
+  status?: string | null;
+  fromDate?: string | null;
+  toDate?: string | null;
+}
+
+export interface CreateJournalLineRequest {
+  accountId: number;
+  debit: number;
+  credit: number;
+  description?: string | null;
+}
+
+export interface CreateJournalEntryRequest {
+  branchId: number;
+  entryDate: string;
+  referenceType?: string | null;
+  referenceId?: number | null;
+  description?: string | null;
+  lines: CreateJournalLineRequest[];
+}

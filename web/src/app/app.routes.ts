@@ -16,6 +16,7 @@ import { UsersPageComponent } from './features/users/users-page.component';
 import { BranchesPageComponent } from './features/branches/branches-page.component';
 import { SettingsPageComponent } from './features/settings/settings-page.component';
 import { HardwarePageComponent } from './features/hardware/hardware-page.component';
+import { FinancePageComponent } from './features/finance/finance-page.component';
 import { ListPageComponent } from './features/stub/list-page.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { ShellComponent } from './layout/shell.component';
@@ -49,6 +50,7 @@ export const routes: Routes = [
       },
       { path: 'purchase-returns', component: PurchaseReturnsPageComponent },
       { path: 'expenses', component: ExpensesPageComponent },
+      { path: 'finance', component: FinancePageComponent },
       { path: 'price-lists', component: PriceListsPageComponent },
       { path: 'product-prices', component: ProductPricesPageComponent },
       { path: 'tax-profiles', component: TaxProfilesPageComponent },

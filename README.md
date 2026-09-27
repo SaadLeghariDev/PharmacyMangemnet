@@ -11,6 +11,7 @@ Database-first pharmacy management platform.
 - **Phase 7** — Reorder rules, alert rules/alerts evaluate, notification templates/logs (API + Angular)
 - **Phase 8** — Users / Roles / Branches / Tenant & Branch settings / Reason codes / Audit logs
 - **Phase 9** — Hardware devices, print templates & barcode print jobs, attachment metadata (API + Angular)
+- **Phase 10** — GL / Accounting: AccountTypes, Chart of Accounts, Journal entries (API + Angular)
 
 ## Structure
 
@@ -43,16 +44,16 @@ If you cloned under `F:\Pharmacymanagemnt` (or similar), point the API at Expres
 
 `Server=DESKTOP-H9TF8EF\SQLEXPRESS;Database=PharmacyManagement;Trusted_Connection=True;TrustServerCertificate=True;`
 
-## API (Phase 9)
+## API (Phase 10)
 
 ```bash
 dotnet restore
 dotnet build
-dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5339
+dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5340
 ```
 
-- Swagger: http://127.0.0.1:5339/swagger  
-- Health: http://127.0.0.1:5339/health  
+- Swagger: http://127.0.0.1:5340/swagger  
+- Health: http://127.0.0.1:5340/health  
 - Connection string key: `ConnectionStrings:PharmacyManagement`  
 - CORS origins include Angular `http://127.0.0.1:43123` (see `Cors:AllowedOrigins`)
 
@@ -86,6 +87,8 @@ Seed user `admin` — in **Development**, password is `Admin@12345` (`AuthBootst
 | **Devices / assignments / settings / events** | `/api/v1/device-types`, `/api/v1/devices`, `/api/v1/device-assignments` | **HW.VIEW / HW.MANAGE** |
 | **Print templates / barcode jobs** | `/api/v1/print-templates`, `/api/v1/barcode-print-jobs` | **PRINT.MANAGE** |
 | **Attachments** | `/api/v1/attachments`, `/api/v1/entity-attachments` | **HW.VIEW / HW.MANAGE** |
+| **Account types / COA** | `/api/v1/account-types`, `/api/v1/chart-of-accounts` | **FIN.COA** |
+| **Journal entries** | `/api/v1/journal-entries` (+ `/post`, `/reverse`) | **FIN.JOURNAL** |
 | Rx / Controlled / Fiscal | `/api/v1/prescriptions`, `/api/v1/controlled-registers`, `/api/v1/fiscal/documents` | RX.*, CTRL.*, FISCAL.* |
 
 At most one `PriceLists.IsDefault` per tenant. Sale complete resolves unit price preferring the default price list, computes tax from product tax profiles + active rates (ignores client `TaxAmount`), writes `InvoiceTaxes`, and includes tax in server totals. Product prices are deactivated via `EffectiveTo` (no hard delete).
@@ -100,6 +103,6 @@ npm install
 npm start
 ```
 
-- App: http://127.0.0.1:43123  
-- Talks to API at `http://127.0.0.1:5339` (`web/src/environments/environment.ts` — update if using another port)  
-- Working slices: **Login**, **app shell**, **POS / Sales**, **Expenses**, **Suppliers** (+ ledger), **Supplier payments**, **Purchase returns**, **Price lists**, **Product prices**, **Tax profiles**, **Reorder rules**, **Alerts**, **Users & Roles**, **Branches**, **Settings**, **Hardware** (devices / print / attachments)
+- App: http://127.0.0.1:43126  
+- Talks to API at `http://127.0.0.1:5340` (`web/src/environments/environment.ts` — update if using another port)  
+- Working slices: **Login**, **app shell**, **POS / Sales**, **Expenses**, **Finance** (COA / Journals), **Suppliers** (+ ledger), **Supplier payments**, **Purchase returns**, **Price lists**, **Product prices**, **Tax profiles**, **Reorder rules**, **Alerts**, **Users & Roles**, **Branches**, **Settings**, **Hardware** (devices / print / attachments)
