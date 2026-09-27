@@ -39,6 +39,7 @@ public sealed class SaleLineDto
     public decimal DiscountAmount { get; set; }
     public decimal TaxAmount { get; set; }
     public decimal NetAmount { get; set; }
+    public long? PrescriptionItemId { get; set; }
     public IReadOnlyList<SaleLineBatchDto> Batches { get; set; } = Array.Empty<SaleLineBatchDto>();
 }
 
@@ -111,6 +112,8 @@ public sealed class CreateSaleLineRequest
     public decimal? UnitPrice { get; set; }
     public decimal DiscountAmount { get; set; }
     public decimal TaxAmount { get; set; }
+    /// <summary>Optional link to a prescription item for dispense workflow.</summary>
+    public long? PrescriptionItemId { get; set; }
     /// <summary>Optional authorized override of FEFO. Quantities in sale unit.</summary>
     public IReadOnlyList<ManualBatchAllocationRequest>? ManualBatches { get; set; }
 }

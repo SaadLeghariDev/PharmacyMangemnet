@@ -1,6 +1,6 @@
 # Pharmacy Management System
 
-Database-first pharmacy management platform. Phase 1 SQL Server DDL; Phase 2A Auth/Org/Products; Phase 2B Purchasing + Inventory; Phase 2C Sales/POS; Phase 2D Cash shifts + Sale void + Customer AR.
+Database-first pharmacy management platform. Phase 1 SQL Server DDL; Phase 2A Auth/Org/Products; Phase 2B Purchasing + Inventory; Phase 2C Sales/POS; Phase 2D Cash/Void/Customer AR; Phase 2E Prescriptions / Controlled register / Fiscal stub.
 
 ## Structure
 
@@ -30,16 +30,16 @@ database/                 # Phase 1 DDL (source of truth — no EF migrations)
 
 Docker default: `localhost,14333` / sa / `Your_strong_Password123`.
 
-## API (Phase 2D)
+## API (Phase 2E)
 
 ```bash
 dotnet restore
 dotnet build
-dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5319
+dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5329
 ```
 
-- Swagger: http://127.0.0.1:5319/swagger
-- Health: http://127.0.0.1:5319/health
+- Swagger: http://127.0.0.1:5329/swagger
+- Health: http://127.0.0.1:5329/health
 - Connection string key: `ConnectionStrings:PharmacyManagement`
 
 ### Modules
@@ -60,9 +60,15 @@ dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5319
 | Sale void | `/api/v1/sales/{id}/void` | `POS.VOID` |
 | Cash shifts | `/api/v1/cash-shifts` | `FIN.CASH` |
 | Customers / AR | `/api/v1/customers` | `CUST.VIEW` / `CUST.EDIT` |
+| Doctors | `/api/v1/doctors` | `RX.DISPENSE` |
+| Prescriptions / dispense | `/api/v1/prescriptions` | `RX.DISPENSE` |
+| Controlled registers | `/api/v1/controlled-registers` | `CTRL.MANAGE` |
+| Fiscal / FBR | `/api/v1/fiscal/documents` | `FISCAL.SUBMIT` |
 
 Document numbers use atomic `NumberSequences` increments (UPDLOCK) — never `MAX(Id)+1`.
-Sale invoices are terminal-scoped (`SALE` + `TerminalId`); returns are branch-scoped (`RETURN`); customer codes are tenant-scoped (`CUSTOMER`).
+Sale invoices are terminal-scoped (`SALE` + `TerminalId`); returns are branch-scoped (`RETURN`); customer codes are tenant-scoped (`CUSTOMER`); prescriptions are tenant-scoped (`PRESCRIPTION` / `RX-`); controlled registers are branch-scoped (`CTRL_REGISTER` / `CDR-`).
+
+Fiscal submit uses a mock FBR gateway when no live credentials are configured (`ForceFailure` supported for retry testing).
 
 ### Local SQL Express (PC)
 
@@ -80,6 +86,6 @@ Seed user `admin` has a placeholder password hash. In **Development**, password 
 dotnet test
 ```
 
-## Explicit non-goals (Phase 2D)
+## Explicit non-goals (Phase 2E)
 
-Prescriptions / dispense, controlled-drug register, FBR/fiscal, Angular UI, supplier AR, EF migrations, schema changes.
+Angular UI, live FBR credentials, prescription attachment upload, standalone refill-only API, supplier AR, EF migrations, schema changes.

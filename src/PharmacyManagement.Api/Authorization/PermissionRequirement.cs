@@ -46,6 +46,9 @@ public static class PermissionPolicies
             Add(PermissionCodes.FinCash);
             Add(PermissionCodes.CustView);
             Add(PermissionCodes.CustEdit);
+            Add(PermissionCodes.RxDispense);
+            Add(PermissionCodes.CtrlManage);
+            Add(PermissionCodes.FiscalSubmit);
         });
         return services;
     }

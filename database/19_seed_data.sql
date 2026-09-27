@@ -67,6 +67,7 @@ INSERT INTO dbo.Permissions (Code, Name, Module, Description) VALUES
  (N'CUST.EDIT', N'Edit Customers', N'Customer', N'Create customers and record AR payments'),
  (N'RX.DISPENSE', N'Dispense Prescription', N'Prescription', N'Dispense Rx items'),
  (N'CTRL.MANAGE', N'Controlled Drugs', N'Controlled', N'Manage controlled registers'),
+ (N'FISCAL.SUBMIT', N'Submit Fiscal', N'Fiscal', N'Create and submit FBR/fiscal documents'),
  (N'FIN.JOURNAL', N'Post Journals', N'Finance', N'Post journal entries'),
  (N'FIN.CASH', N'Cash Shift', N'Finance', N'Open and close cash shifts'),
  (N'RPT.VIEW', N'View Reports', N'Reports', N'Access operational reports');
@@ -79,6 +80,11 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'CUST.VIEW')
 IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'CUST.EDIT')
     INSERT INTO dbo.Permissions (Code, Name, Module, Description)
     VALUES (N'CUST.EDIT', N'Edit Customers', N'Customer', N'Create customers and record AR payments');
+
+/* Idempotent add for Phase 2E fiscal permission */
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'FISCAL.SUBMIT')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'FISCAL.SUBMIT', N'Submit Fiscal', N'Fiscal', N'Create and submit FBR/fiscal documents');
 GO
 
 /* Minimal demo org for tests */
@@ -183,6 +189,14 @@ IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND 
 IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND DocumentType = N'GRN' AND BranchId = @BranchId AND TerminalId IS NULL)
     INSERT INTO dbo.NumberSequences (TenantId, BranchId, TerminalId, DocumentType, Prefix, CurrentNumber, NumberLength, ResetPeriod)
     VALUES (@TenantId, @BranchId, NULL, N'GRN', N'GRN-', 0, 6, N'Never');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND DocumentType = N'PRESCRIPTION' AND BranchId IS NULL AND TerminalId IS NULL)
+    INSERT INTO dbo.NumberSequences (TenantId, BranchId, TerminalId, DocumentType, Prefix, CurrentNumber, NumberLength, ResetPeriod)
+    VALUES (@TenantId, NULL, NULL, N'PRESCRIPTION', N'RX-', 0, 6, N'Never');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND DocumentType = N'CTRL_REGISTER' AND BranchId = @BranchId AND TerminalId IS NULL)
+    INSERT INTO dbo.NumberSequences (TenantId, BranchId, TerminalId, DocumentType, Prefix, CurrentNumber, NumberLength, ResetPeriod)
+    VALUES (@TenantId, @BranchId, NULL, N'CTRL_REGISTER', N'CDR-', 0, 6, N'Never');
 
 PRINT N'Seed data applied.';
 GO

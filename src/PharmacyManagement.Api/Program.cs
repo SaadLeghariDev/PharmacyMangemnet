@@ -70,7 +70,7 @@ try
         {
             Title = "Pharmacy Management API",
             Version = "v1",
-            Description = "Phase 2B — Auth, Organization, Products, Purchasing, Inventory (Database-First)"
+            Description = "Phase 2E — Auth, Org, Products, Purchasing, Inventory, Sales, Cash, Customers, Prescriptions, Controlled, Fiscal (Database-First)"
         });
         c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {

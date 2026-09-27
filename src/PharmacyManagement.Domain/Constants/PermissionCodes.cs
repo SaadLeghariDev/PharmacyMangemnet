@@ -20,6 +20,9 @@ public static class PermissionCodes
     public const string FinCash = "FIN.CASH";
     public const string CustView = "CUST.VIEW";
     public const string CustEdit = "CUST.EDIT";
+    public const string RxDispense = "RX.DISPENSE";
+    public const string CtrlManage = "CTRL.MANAGE";
+    public const string FiscalSubmit = "FISCAL.SUBMIT";
 }
 
 public static class DocumentTypes
@@ -32,6 +35,8 @@ public static class DocumentTypes
     public const string Sale = "SALE";
     public const string SaleReturn = "RETURN";
     public const string Customer = "CUSTOMER";
+    public const string Prescription = "PRESCRIPTION";
+    public const string ControlledRegister = "CTRL_REGISTER";
 }
 
 public static class MovementTypes

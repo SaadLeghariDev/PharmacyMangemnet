@@ -1,9 +1,12 @@
 using PharmacyManagement.Application.Common;
 using PharmacyManagement.Application.DTOs.Auth;
 using PharmacyManagement.Application.DTOs.Cash;
+using PharmacyManagement.Application.DTOs.Controlled;
 using PharmacyManagement.Application.DTOs.Customers;
+using PharmacyManagement.Application.DTOs.Fiscal;
 using PharmacyManagement.Application.DTOs.Inventory;
 using PharmacyManagement.Application.DTOs.Organization;
+using PharmacyManagement.Application.DTOs.Prescriptions;
 using PharmacyManagement.Application.DTOs.Products;
 using PharmacyManagement.Application.DTOs.Purchasing;
 using PharmacyManagement.Application.DTOs.Sales;
@@ -186,4 +189,68 @@ public interface ISaleReturnService
     Task<SaleReturnDto?> GetByIdAsync(long id, CancellationToken ct = default);
     Task<SaleReturnDto> CreateAsync(CreateSaleReturnRequest request, CancellationToken ct = default);
     Task<SaleReturnDto> PostAsync(long id, CancellationToken ct = default);
+}
+
+public interface IDoctorService
+{
+    Task<PagedResult<DoctorDto>> SearchAsync(DoctorQuery query, CancellationToken ct = default);
+    Task<DoctorDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<DoctorDto> CreateAsync(CreateDoctorRequest request, CancellationToken ct = default);
+    Task<DoctorDto> UpdateAsync(long id, UpdateDoctorRequest request, CancellationToken ct = default);
+    Task DeactivateAsync(long id, CancellationToken ct = default);
+}
+
+public interface IPrescriptionService
+{
+    Task<PagedResult<PrescriptionDto>> SearchAsync(PrescriptionQuery query, CancellationToken ct = default);
+    Task<PrescriptionDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<PrescriptionDto> CreateAsync(CreatePrescriptionRequest request, CancellationToken ct = default);
+    Task<PrescriptionDto> CancelAsync(long id, CancellationToken ct = default);
+    Task<PrescriptionDto> DispenseAsync(long id, DispensePrescriptionRequest request, CancellationToken ct = default);
+}
+
+public interface IControlledDrugService
+{
+    Task<PagedResult<ControlledRegisterDto>> SearchAsync(ControlledRegisterQuery query, CancellationToken ct = default);
+    Task<ControlledRegisterDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<ControlledRegisterDto> OpenAsync(OpenControlledRegisterRequest request, CancellationToken ct = default);
+    Task<PagedResult<ControlledTransactionDto>> GetTransactionsAsync(long registerId, ControlledTransactionQuery query, CancellationToken ct = default);
+    Task<ControlledTransactionDto> PostTransactionAsync(long registerId, PostControlledTransactionRequest request, CancellationToken ct = default);
+}
+
+public interface IFiscalGateway
+{
+    Task<FiscalGatewayResult> SubmitAsync(FiscalGatewayRequest request, CancellationToken ct = default);
+}
+
+public sealed class FiscalGatewayRequest
+{
+    public string Provider { get; set; } = string.Empty;
+    public string InternalInvoiceNumber { get; set; } = string.Empty;
+    public decimal NetAmount { get; set; }
+    public decimal TaxAmount { get; set; }
+    public bool ForceFailure { get; set; }
+}
+
+public sealed class FiscalGatewayResult
+{
+    public bool Success { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public int HttpStatusCode { get; set; }
+    public string? FbrInvoiceNumber { get; set; }
+    public string? QrData { get; set; }
+    public string? VerificationUrl { get; set; }
+    public string? ErrorCode { get; set; }
+    public string? ErrorMessage { get; set; }
+    public string RequestPayload { get; set; } = string.Empty;
+    public string ResponsePayload { get; set; } = string.Empty;
+}
+
+public interface IFiscalService
+{
+    Task<PagedResult<FiscalDocumentDto>> SearchAsync(FiscalDocumentQuery query, CancellationToken ct = default);
+    Task<FiscalDocumentDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<FiscalDocumentDto> CreateAsync(CreateFiscalDocumentRequest request, CancellationToken ct = default);
+    Task<FiscalDocumentDto> SubmitAsync(long id, FiscalSubmitRequest request, CancellationToken ct = default);
+    Task<FiscalDocumentDto> RetryAsync(long id, FiscalSubmitRequest request, CancellationToken ct = default);
 }

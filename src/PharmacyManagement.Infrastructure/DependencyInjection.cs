@@ -43,6 +43,11 @@ public static class DependencyInjection
         services.AddScoped<ISaleReturnService, SaleReturnService>();
         services.AddScoped<ICashShiftService, CashShiftService>();
         services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<IDoctorService, DoctorService>();
+        services.AddScoped<IPrescriptionService, PrescriptionService>();
+        services.AddScoped<IControlledDrugService, ControlledDrugService>();
+        services.AddSingleton<IFiscalGateway, MockFiscalGateway>();
+        services.AddScoped<IFiscalService, FiscalService>();
 
         return services;
     }

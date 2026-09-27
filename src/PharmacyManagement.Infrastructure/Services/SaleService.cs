@@ -185,6 +185,28 @@ public sealed class SaleService(
                     throw new ValidationAppException([
                         $"Line {lineIndex}: allocated base qty {allocatedBase} does not match required {baseQty}."]);
 
+                if (lineReq.PrescriptionItemId is long rxItemId)
+                {
+                    var rxItem = await db.PrescriptionItems.AsNoTracking()
+                        .Include(i => i.Prescription).ThenInclude(p => p.Customer)
+                        .FirstOrDefaultAsync(i => i.Id == rxItemId, ct)
+                        ?? throw new ValidationAppException([
+                            $"Line {lineIndex}: prescription item {rxItemId} not found."]);
+                    if (rxItem.ProductId != lineReq.ProductId)
+                        throw new ValidationAppException([
+                            $"Line {lineIndex}: prescription item product mismatch."]);
+                    if (rxItem.Prescription.Customer.TenantId != tenantId)
+                        throw new ValidationAppException([
+                            $"Line {lineIndex}: prescription item tenant mismatch."]);
+                    if (request.CustomerId is long saleCustomerId &&
+                        rxItem.Prescription.CustomerId != saleCustomerId)
+                        throw new ValidationAppException([
+                            $"Line {lineIndex}: prescription customer does not match sale customer."]);
+                    if (rxItem.Prescription.Status is "Cancelled" or "Expired")
+                        throw new ValidationAppException([
+                            $"Line {lineIndex}: prescription is {rxItem.Prescription.Status}."]);
+                }
+
                 var saleLine = new SaleLine
                 {
                     ProductId = lineReq.ProductId,
@@ -196,7 +218,8 @@ public sealed class SaleService(
                     Mrp = mrp,
                     DiscountAmount = lineDiscount,
                     TaxAmount = lineTax,
-                    NetAmount = lineNet
+                    NetAmount = lineNet,
+                    PrescriptionItemId = lineReq.PrescriptionItemId
                 };
 
                 foreach (var alloc in allocations)
@@ -534,6 +557,8 @@ public sealed class SaleService(
                 }
             }
 
+            await ReverseControlledDispensesAsync(sale, userId, now, ct);
+
             sale.Status = "Voided";
             sale.PaidAmount = 0;
             sale.DueAmount = 0;
@@ -549,6 +574,24 @@ public sealed class SaleService(
             {
                 throw new ConflictException("Stock location was modified concurrently. Reload and retry.");
             }
+
+            // Recompute Rx status after Sale.Status is Voided so dispensed qty excludes this sale
+            var rxIds = await db.DispensingRecords
+                .Where(d => d.SaleId == sale.Id)
+                .Select(d => d.PrescriptionId)
+                .Distinct()
+                .ToListAsync(ct);
+            foreach (var rxId in rxIds)
+            {
+                var rx = await db.Prescriptions
+                    .Include(p => p.PrescriptionItems)
+                    .FirstOrDefaultAsync(p => p.Id == rxId, ct);
+                if (rx is not null)
+                    await PrescriptionService.RecalculateRxStatusAsync(db, rx, ct);
+            }
+
+            if (rxIds.Count > 0)
+                await db.SaveChangesAsync(ct);
 
             if (tx is not null) await tx.CommitAsync(ct);
         }
@@ -797,6 +840,55 @@ public sealed class SaleService(
                 $"Credit limit exceeded. Limit {customer.CreditLimit}, balance {Math.Round(balance, 4)}, new due {additionalDue}."]);
     }
 
+    private async Task ReverseControlledDispensesAsync(
+        Sale sale, long userId, DateTime now, CancellationToken ct)
+    {
+        var dispenses = await db.ControlledDrugTransactions
+            .Where(t =>
+                t.ReferenceType == "Sale" &&
+                t.ReferenceId == sale.Id &&
+                t.TransactionType == "Dispense")
+            .ToListAsync(ct);
+
+        foreach (var dispense in dispenses)
+        {
+            var alreadyReturned = await db.ControlledDrugTransactions.AnyAsync(t =>
+                t.RegisterId == dispense.RegisterId &&
+                t.ReferenceType == "Sale" &&
+                t.ReferenceId == sale.Id &&
+                t.TransactionType == "Return" &&
+                t.Quantity == dispense.Quantity &&
+                t.Remarks != null &&
+                t.Remarks.Contains($"rev:{dispense.Id}"), ct);
+            if (alreadyReturned) continue;
+
+            var register = await db.ControlledDrugRegisters
+                .FirstOrDefaultAsync(r => r.Id == dispense.RegisterId, ct);
+            if (register is null) continue;
+
+            var before = register.CurrentBalance;
+            var after = Math.Round(before + dispense.Quantity, 6);
+            register.CurrentBalance = after;
+
+            db.ControlledDrugTransactions.Add(new ControlledDrugTransaction
+            {
+                RegisterId = register.Id,
+                TransactionType = "Return",
+                ReferenceType = "Sale",
+                ReferenceId = sale.Id,
+                Quantity = dispense.Quantity,
+                BalanceBefore = before,
+                BalanceAfter = after,
+                PrescriptionId = dispense.PrescriptionId,
+                DoctorId = dispense.DoctorId,
+                PerformedBy = userId,
+                WitnessedBy = dispense.WitnessedBy,
+                TransactionDate = now,
+                Remarks = $"Void sale {sale.InvoiceNumber} rev:{dispense.Id}"
+            });
+        }
+    }
+
     private async Task TryPostCashSaleToOpenShiftAsync(
         Sale sale,
         IReadOnlyDictionary<long, PaymentMethod> methods,
@@ -936,6 +1028,7 @@ public sealed class SaleService(
             DiscountAmount = l.DiscountAmount,
             TaxAmount = l.TaxAmount,
             NetAmount = l.NetAmount,
+            PrescriptionItemId = l.PrescriptionItemId,
             Batches = l.SaleLineBatches.Select(b => new SaleLineBatchDto
             {
                 Id = b.Id,
