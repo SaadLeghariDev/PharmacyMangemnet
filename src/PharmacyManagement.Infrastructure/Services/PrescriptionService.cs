@@ -78,42 +78,64 @@ public sealed class PrescriptionService(
         if (products.Count != productIds.Count)
             throw new ValidationAppException(["One or more products are invalid."]);
 
-        var number = await sequences.AllocateNextAsync(
-            tenantId, DocumentTypes.Prescription, null, null, "RX-", ct);
-
-        var entity = new Prescription
+        // Retry once if allocated number collides with legacy/manual inserts (sequence lag).
+        for (var attempt = 0; attempt < 3; attempt++)
         {
-            CustomerId = customer.Id,
-            DoctorId = request.DoctorId,
-            PrescriptionNumber = number,
-            PrescriptionDate = request.PrescriptionDate ?? DateOnly.FromDateTime(now),
-            DiagnosisNotes = request.DiagnosisNotes,
-            Status = "Active",
-            CreatedBy = userId,
-            CreatedAt = now
-        };
+            var number = await sequences.AllocateNextAsync(
+                tenantId, DocumentTypes.Prescription, null, null, "RX-", ct);
 
-        foreach (var item in request.Items)
-        {
-            entity.PrescriptionItems.Add(new PrescriptionItem
+            var entity = new Prescription
             {
-                ProductId = item.ProductId,
-                DosageAmount = item.DosageAmount,
-                DosageUnit = item.DosageUnit,
-                FrequencyCode = item.FrequencyCode,
-                Route = item.Route,
-                DurationValue = item.DurationValue,
-                DurationUnit = item.DurationUnit,
-                Quantity = Math.Round(item.Quantity, 6),
-                Instructions = item.Instructions,
-                RefillAllowed = item.RefillAllowed,
-                RefillCount = item.RefillCount
-            });
+                CustomerId = customer.Id,
+                DoctorId = request.DoctorId,
+                PrescriptionNumber = number,
+                PrescriptionDate = request.PrescriptionDate ?? DateOnly.FromDateTime(now),
+                DiagnosisNotes = request.DiagnosisNotes,
+                Status = "Active",
+                CreatedBy = userId,
+                CreatedAt = now
+            };
+
+            foreach (var item in request.Items)
+            {
+                entity.PrescriptionItems.Add(new PrescriptionItem
+                {
+                    ProductId = item.ProductId,
+                    DosageAmount = item.DosageAmount,
+                    DosageUnit = item.DosageUnit,
+                    FrequencyCode = item.FrequencyCode,
+                    Route = item.Route,
+                    DurationValue = item.DurationValue,
+                    DurationUnit = item.DurationUnit,
+                    Quantity = Math.Round(item.Quantity, 6),
+                    Instructions = item.Instructions,
+                    RefillAllowed = item.RefillAllowed,
+                    RefillCount = item.RefillCount
+                });
+            }
+
+            db.Prescriptions.Add(entity);
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return (await GetByIdAsync(entity.Id, ct))!;
+            }
+            catch (DbUpdateException ex) when (IsUniqueViolation(ex) && attempt < 2)
+            {
+                db.ChangeTracker.Clear();
+            }
         }
 
-        db.Prescriptions.Add(entity);
-        await db.SaveChangesAsync(ct);
-        return (await GetByIdAsync(entity.Id, ct))!;
+        throw new ConflictException("Unable to allocate a unique prescription number.");
+    }
+
+    private static bool IsUniqueViolation(DbUpdateException ex)
+    {
+        var msg = ex.InnerException?.Message ?? ex.Message;
+        return msg.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase)
+               || msg.Contains("duplicate", StringComparison.OrdinalIgnoreCase)
+               || msg.Contains("2627")
+               || msg.Contains("2601");
     }
 
     public async Task<PrescriptionDto> CancelAsync(long id, CancellationToken ct = default)
