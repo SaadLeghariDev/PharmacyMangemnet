@@ -1,6 +1,6 @@
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1.2fr) minmax(140px, 0.6fr) auto;
   gap: 0.75rem;
   align-items: end;
   margin-bottom: 1rem;
@@ -29,22 +29,30 @@
   font-size: 0.875rem;
 }
 
-.header-link,
-.row-link {
-  color: var(--color-primary);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.875rem;
-  margin-right: 0.75rem;
-}
-
-.header-link:hover,
-.row-link:hover {
-  color: var(--color-primary-dark);
-  text-decoration: underline;
-}
-
 .form-grid {
   display: grid;
   gap: 0.75rem;
+}
+
+.row-link {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.row-link:hover {
+  text-decoration: underline;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.check {
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }

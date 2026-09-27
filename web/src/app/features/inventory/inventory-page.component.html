@@ -1,0 +1,112 @@
+<app-page-header title="Inventory" subtitle="Stock balances, expiry risk, and FEFO batch selection." />
+
+<div class="tabs">
+  <button type="button" class="tab" [class.active]="tab === 'stock'" (click)="setTab('stock')">Stock</button>
+  <button type="button" class="tab" [class.active]="tab === 'near-expiry'" (click)="setTab('near-expiry')">
+    Near expiry
+  </button>
+  <button type="button" class="tab" [class.active]="tab === 'fefo'" (click)="setTab('fefo')">FEFO</button>
+</div>
+
+@if (tab === 'stock' || tab === 'near-expiry') {
+  <div class="toolbar">
+    <app-select label="Warehouse" [options]="warehouseOptions()" [(ngModel)]="warehouseFilter" />
+    @if (tab === 'near-expiry') {
+      <app-input label="Days ahead" type="number" [min]="1" [(ngModel)]="daysAhead" />
+    }
+    <div class="toolbar-actions">
+      <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    </div>
+  </div>
+} @else {
+  <div class="toolbar toolbar-fefo">
+    <app-input label="Product ID" type="number" [(ngModel)]="fefoProductId" />
+    <app-input label="Warehouse ID" type="number" [(ngModel)]="fefoWarehouseId" />
+    <app-input label="Required qty" type="number" [min]="1" [(ngModel)]="fefoQty" />
+    <div class="toolbar-actions">
+      <app-button variant="secondary" (clicked)="runFefo()" [loading]="loading()">Get FEFO</app-button>
+    </div>
+  </div>
+}
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="applyFilters()">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (tab === 'stock') {
+  @if (!stockRows().length) {
+    <app-empty-state title="No stock" message="No batch locations match the warehouse filter." />
+  } @else {
+    <app-table
+      [columns]="stockColumns"
+      [hasActions]="false"
+      [page]="page()"
+      [hasNext]="hasNext()"
+      [totalCount]="totalCount()"
+      (pageChange)="loadStock($event)"
+    >
+      @for (row of stockRows(); track row.batchId + '-' + row.warehouseLocationId) {
+        <tr>
+          <td>
+            <div>{{ row.productName || '—' }}</div>
+            <div class="muted">{{ row.sku }}</div>
+          </td>
+          <td>{{ row.batchNumber }}</td>
+          <td>{{ row.expiryDate | date: 'mediumDate' }}</td>
+          <td>{{ row.locationCode || row.warehouseLocationId }}</td>
+          <td class="num">{{ row.quantityOnHand }}</td>
+          <td class="num">{{ row.availableQuantity }}</td>
+        </tr>
+      }
+    </app-table>
+  }
+} @else if (tab === 'near-expiry') {
+  @if (!nearRows().length) {
+    <app-empty-state title="Nothing expiring soon" message="No batches within the selected window." />
+  } @else {
+    <app-table
+      [columns]="stockColumns"
+      [hasActions]="false"
+      [page]="page()"
+      [hasNext]="hasNext()"
+      [totalCount]="totalCount()"
+      (pageChange)="loadNearExpiry($event)"
+    >
+      @for (row of nearRows(); track row.batchId + '-' + row.warehouseLocationId) {
+        <tr>
+          <td>
+            <div>{{ row.productName || '—' }}</div>
+            <div class="muted">{{ row.sku }}</div>
+          </td>
+          <td>{{ row.batchNumber }}</td>
+          <td>{{ row.expiryDate | date: 'mediumDate' }}</td>
+          <td>{{ row.locationCode || row.warehouseLocationId }}</td>
+          <td class="num">{{ row.quantityOnHand }}</td>
+          <td class="num">{{ row.availableQuantity }}</td>
+        </tr>
+      }
+    </app-table>
+  }
+} @else {
+  @if (!fefoRows().length) {
+    <app-empty-state title="FEFO candidates" message="Enter product and warehouse IDs, then run FEFO." />
+  } @else {
+    <app-table [columns]="fefoColumns" [hasActions]="false">
+      @for (row of fefoRows(); track row.batchId) {
+        <tr>
+          <td>{{ row.batchNumber }}</td>
+          <td>{{ row.expiryDate | date: 'mediumDate' }}</td>
+          <td>{{ row.warehouseLocationId }}</td>
+          <td class="num">{{ row.availableQuantity }}</td>
+          <td class="num">{{ row.purchaseCost }}</td>
+          <td class="num">{{ row.salePrice }}</td>
+        </tr>
+      }
+    </app-table>
+  }
+}

@@ -3,7 +3,7 @@
 Database-first pharmacy management platform.
 
 - **Phase 1** — SQL Server DDL  
-- **Phase 2A–2E** — ASP.NET API (Auth, Products, Purchasing, Inventory, Sales/POS, Cash, Customers, Prescriptions, Controlled, Fiscal stub)  
+- **Phase 2A–2E** — ASP.NET API (Auth, Products, Purchasing, Inventory, Sales/POS, Cash, Customers, Prescriptions, Controlled, Fiscal)  
 - **Phase 3** — Angular counter UI (`web/`) — login, shell, usable POS  
 - **Phase 4** — Expenses + ExpenseCategories (API + Angular)
 - **Phase 5** — Supplier payments / returns / ledger (API + Angular)
@@ -12,6 +12,9 @@ Database-first pharmacy management platform.
 - **Phase 8** — Users / Roles / Branches / Tenant & Branch settings / Reason codes / Audit logs
 - **Phase 9** — Hardware devices, print templates & barcode print jobs, attachment metadata (API + Angular)
 - **Phase 10** — GL / Accounting: AccountTypes, Chart of Accounts, Journal entries (API + Angular)
+- **Phase 11** — Offline sync nodes/batches/push/pull + idempotency key admin (API + Angular)
+- **Phase 12** — Angular deepen: Products, Inventory, Purchases/GRN, Customers, Dashboard, Reports
+- **Phase 13** — FBR fiscal: mock default + configurable live HTTP adapter
 
 ## Structure
 
@@ -44,22 +47,42 @@ If you cloned under `F:\Pharmacymanagemnt` (or similar), point the API at Expres
 
 `Server=DESKTOP-H9TF8EF\SQLEXPRESS;Database=PharmacyManagement;Trusted_Connection=True;TrustServerCertificate=True;`
 
-## API (Phase 10)
+## API
 
 ```bash
 dotnet restore
 dotnet build
-dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5340
+dotnet run --project src/PharmacyManagement.Api --urls http://127.0.0.1:5342
 ```
 
-- Swagger: http://127.0.0.1:5340/swagger  
-- Health: http://127.0.0.1:5340/health  
+- Swagger: http://127.0.0.1:5342/swagger  
+- Health: http://127.0.0.1:5342/health  
 - Connection string key: `ConnectionStrings:PharmacyManagement`  
 - CORS origins include Angular `http://127.0.0.1:43123` (see `Cors:AllowedOrigins`)
 
 ### Development login
 
-Seed user `admin` — in **Development**, password is `Admin@12345` (`AuthBootstrap:DevelopmentAdminPassword`).
+Seed user `admin` — in **Development**, password is `Admin@12345` (`AuthBootstrap:DevelopmentAdminPassword`).  
+**Before production:** replace the seed `PasswordHash` with a real ASP.NET Identity hash and disable/remove the development plaintext bootstrap password.
+
+### FBR / Fiscal (Phase 13)
+
+Submit/retry: `POST /api/v1/fiscal/documents/{id}/submit` and `/retry`.
+
+| Mode | When |
+|------|------|
+| **Mock** (default) | `Fiscal:BaseUrl` empty / unset — no external calls |
+| **Live HTTP** | `Fiscal:BaseUrl` set — posts JSON to `{BaseUrl}{SubmitPath}` |
+
+Configuration (`appsettings` or environment variables — **do not commit secrets**):
+
+| Key | Env | Purpose |
+|-----|-----|---------|
+| `Fiscal:BaseUrl` | `Fiscal__BaseUrl` | e.g. `https://fbr-api.example.com` |
+| `Fiscal:ApiKey` | `Fiscal__ApiKey` | Sent as `X-API-Key` (or Bearer if `AuthScheme=Bearer`) |
+| `Fiscal:SubmitPath` | `Fiscal__SubmitPath` | Default `/api/invoice/submit` |
+| `Fiscal:AuthScheme` | `Fiscal__AuthScheme` | `ApiKey` (default) or `Bearer` |
+| `Fiscal:TimeoutSeconds` | `Fiscal__TimeoutSeconds` | Default `30` |
 
 ### Modules
 
@@ -89,11 +112,8 @@ Seed user `admin` — in **Development**, password is `Admin@12345` (`AuthBootst
 | **Attachments** | `/api/v1/attachments`, `/api/v1/entity-attachments` | **HW.VIEW / HW.MANAGE** |
 | **Account types / COA** | `/api/v1/account-types`, `/api/v1/chart-of-accounts` | **FIN.COA** |
 | **Journal entries** | `/api/v1/journal-entries` (+ `/post`, `/reverse`) | **FIN.JOURNAL** |
+| **Sync** | `/api/v1/sync-nodes`, `/api/v1/sync-batches`, `/api/v1/sync/push\|pull`, `/api/v1/idempotency-keys` | **SYNC.VIEW / SYNC.MANAGE** |
 | Rx / Controlled / Fiscal | `/api/v1/prescriptions`, `/api/v1/controlled-registers`, `/api/v1/fiscal/documents` | RX.*, CTRL.*, FISCAL.* |
-
-At most one `PriceLists.IsDefault` per tenant. Sale complete resolves unit price preferring the default price list, computes tax from product tax profiles + active rates (ignores client `TaxAmount`), writes `InvoiceTaxes`, and includes tax in server totals. Product prices are deactivated via `EffectiveTo` (no hard delete).
-
-Reorder rules hold product/warehouse thresholds; low-stock candidates compare Available (QoH−Reserved) to `ReorderPoint`. `POST /api/v1/alerts/evaluate` creates `Open` LowStock/Expiry alerts (schema statuses/severities only) and optionally `NotificationLogs` when template code `ALERT_{AlertType}` exists.
 
 ## Angular UI
 
@@ -103,6 +123,17 @@ npm install
 npm start
 ```
 
-- App: http://127.0.0.1:43126  
-- Talks to API at `http://127.0.0.1:5340` (`web/src/environments/environment.ts` — update if using another port)  
-- Working slices: **Login**, **app shell**, **POS / Sales**, **Expenses**, **Finance** (COA / Journals), **Suppliers** (+ ledger), **Supplier payments**, **Purchase returns**, **Price lists**, **Product prices**, **Tax profiles**, **Reorder rules**, **Alerts**, **Users & Roles**, **Branches**, **Settings**, **Hardware** (devices / print / attachments)
+- App: http://127.0.0.1:43123  
+- Talks to API at `http://127.0.0.1:5340` by default (`web/src/environments/environment.ts` — update to match your API port)  
+- Screens: **Dashboard**, **POS**, **Products**, **Inventory**, **Purchases/GRN**, **Suppliers** (+ create/ledger), **Customers** (+ ledger), **Sales returns** (list stub), **Purchase returns**, **Expenses**, **Finance**, **Price lists / Product prices / Tax**, **Reorder rules**, **Alerts**, **Reports**, **Users & Roles**, **Branches**, **Hardware**, **Sync**, **Settings**
+
+## Production checklist
+
+1. **Password hash** — Replace seed admin `PasswordHash` with a real Identity hash; remove or blank `AuthBootstrap:DevelopmentAdminPassword` outside Development.
+2. **JWT** — Set a long random `Jwt:Key` via secret store / env (`Jwt__Key`); rotate if ever exposed.
+3. **Connection strings** — Use production SQL credentials via env (`ConnectionStrings__PharmacyManagement`); never commit production secrets.
+4. **CORS** — Restrict `Cors:AllowedOrigins` to your real Angular HTTPS origins only.
+5. **HTTPS** — Terminate TLS at reverse proxy or Kestrel; do not expose plain HTTP publicly.
+6. **FBR** — Set `Fiscal__BaseUrl` + `Fiscal__ApiKey` only in the production secret store; leave empty to keep mock (never for real fiscal compliance).
+7. **Health / Swagger** — Keep `/health` for probes; disable or protect Swagger in production if required by policy.
+8. **Database-first** — Apply DDL scripts from `database/`; do not enable EF migrations against production.

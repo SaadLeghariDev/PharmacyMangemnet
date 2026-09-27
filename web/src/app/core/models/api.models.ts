@@ -70,6 +70,56 @@ export interface ProductDto {
   updatedAt: string;
 }
 
+export interface ProductSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  categoryId?: number | null;
+  isActive?: boolean | null;
+}
+
+export interface CreateProductRequest {
+  categoryId: number;
+  manufacturerId: number;
+  brandId: number;
+  therapeuticClassId: number;
+  sku: string;
+  productCode?: string | null;
+  name: string;
+  genericName?: string | null;
+  form?: string | null;
+  strength?: string | null;
+  strengthUnit?: string | null;
+  packDescription?: string | null;
+  prescriptionRequired: boolean;
+  isControlled: boolean;
+  isTemperatureSensitive: boolean;
+  isRefrigerated: boolean;
+  isReturnable: boolean;
+  isSaleable: boolean;
+}
+
+export interface UpdateProductRequest {
+  categoryId: number;
+  manufacturerId: number;
+  brandId: number;
+  therapeuticClassId: number;
+  productCode?: string | null;
+  name: string;
+  genericName?: string | null;
+  form?: string | null;
+  strength?: string | null;
+  strengthUnit?: string | null;
+  packDescription?: string | null;
+  prescriptionRequired: boolean;
+  isControlled: boolean;
+  isTemperatureSensitive: boolean;
+  isRefrigerated: boolean;
+  isReturnable: boolean;
+  isSaleable: boolean;
+  isActive: boolean;
+}
+
 export interface BarcodeLookupDto {
   barcodeId: number;
   barcodeValue: string;
@@ -296,6 +346,18 @@ export interface WarehouseDto {
   isActive: boolean;
 }
 
+export interface WarehouseLocationDto {
+  id: number;
+  warehouseId: number;
+  code: string;
+  name: string;
+  rackNo?: string | null;
+  shelfNo?: string | null;
+  binNo?: string | null;
+  locationType?: string | null;
+  isActive: boolean;
+}
+
 export interface PosTerminalDto {
   id: number;
   branchId: number;
@@ -316,6 +378,42 @@ export interface FefoCandidateDto {
   availableQuantity: number;
   purchaseCost: number;
   salePrice: number;
+}
+
+export interface StockBalanceDto {
+  productId: number;
+  sku?: string | null;
+  productName?: string | null;
+  batchId: number;
+  batchNumber: string;
+  expiryDate: string;
+  batchStatus: string;
+  isRecalled: boolean;
+  warehouseId: number;
+  warehouseLocationId: number;
+  locationCode?: string | null;
+  quantityOnHand: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+}
+
+export interface StockSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  productId?: number | null;
+  warehouseId?: number | null;
+  warehouseLocationId?: number | null;
+  batchId?: number | null;
+  includeZero?: boolean | null;
+}
+
+export interface NearExpirySearchParams {
+  page?: number;
+  pageSize?: number;
+  daysAhead?: number;
+  warehouseId?: number | null;
+  productId?: number | null;
 }
 
 export interface CreateSaleLineRequest {
@@ -413,6 +511,19 @@ export interface SaleDto {
   createdAt: string;
   lines: SaleLineDto[];
   payments: SalePaymentDto[];
+}
+
+export interface SaleSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  branchId?: number | null;
+  terminalId?: number | null;
+  customerId?: number | null;
+  status?: string | null;
+  paymentStatus?: string | null;
+  fromDate?: string | null;
+  toDate?: string | null;
 }
 
 export interface SaleReceiptDto {
@@ -528,6 +639,227 @@ export interface SupplierDto {
   creditLimit: number;
   paymentTermsDays: number;
   isActive: boolean;
+}
+
+export interface CreateSupplierRequest {
+  code: string;
+  name: string;
+  companyName?: string | null;
+  ntn?: string | null;
+  strn?: string | null;
+  drugLicenseNo?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  creditLimit: number;
+  paymentTermsDays: number;
+}
+
+export interface PurchaseOrderLineDto {
+  id: number;
+  productId: number;
+  productUnitId: number;
+  quantity: number;
+  freeQuantity: number;
+  unitPrice: number;
+  discountAmount: number;
+  taxAmount: number;
+  netAmount: number;
+}
+
+export interface PurchaseOrderDto {
+  id: number;
+  branchId: number;
+  warehouseId: number;
+  supplierId: number;
+  poNumber: string;
+  poDate: string;
+  expectedDate?: string | null;
+  status: string;
+  remarks?: string | null;
+  createdBy?: number | null;
+  approvedBy?: number | null;
+  approvedAt?: string | null;
+  lines: PurchaseOrderLineDto[];
+}
+
+export interface PurchaseOrderLineRequest {
+  productId: number;
+  productUnitId: number;
+  quantity: number;
+  freeQuantity?: number;
+  unitPrice: number;
+  discountAmount?: number;
+  taxAmount?: number;
+}
+
+export interface CreatePurchaseOrderRequest {
+  branchId: number;
+  warehouseId: number;
+  supplierId: number;
+  expectedDate?: string | null;
+  remarks?: string | null;
+  lines: PurchaseOrderLineRequest[];
+}
+
+export interface PurchaseOrderSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  branchId?: number | null;
+  supplierId?: number | null;
+  status?: string | null;
+}
+
+export interface GoodsReceiptLineBatchDto {
+  id: number;
+  batchNumber: string;
+  manufacturingDate?: string | null;
+  expiryDate: string;
+  mrp: number;
+  salePrice: number;
+  quantity: number;
+  freeQuantity: number;
+  warehouseLocationId: number;
+}
+
+export interface GoodsReceiptLineDto {
+  id: number;
+  productId: number;
+  productUnitId: number;
+  orderedQuantity: number;
+  receivedQuantity: number;
+  freeQuantity: number;
+  unitCost: number;
+  discountAmount: number;
+  taxAmount: number;
+  netCost: number;
+  batches: GoodsReceiptLineBatchDto[];
+}
+
+export interface GoodsReceiptDto {
+  id: number;
+  branchId: number;
+  warehouseId: number;
+  supplierId: number;
+  purchaseOrderId?: number | null;
+  grnNumber: string;
+  receiptDate: string;
+  status: string;
+  invoiceNumber?: string | null;
+  invoiceDate?: string | null;
+  subtotal: number;
+  discountAmount: number;
+  taxAmount: number;
+  netAmount: number;
+  receivedBy?: number | null;
+  createdAt: string;
+  lines: GoodsReceiptLineDto[];
+}
+
+export interface GoodsReceiptLineBatchRequest {
+  batchNumber: string;
+  manufacturingDate?: string | null;
+  expiryDate: string;
+  mrp: number;
+  salePrice: number;
+  quantity: number;
+  freeQuantity?: number;
+  warehouseLocationId: number;
+}
+
+export interface GoodsReceiptLineRequest {
+  productId: number;
+  productUnitId: number;
+  orderedQuantity?: number;
+  receivedQuantity: number;
+  freeQuantity?: number;
+  unitCost: number;
+  discountAmount?: number;
+  taxAmount?: number;
+  batches: GoodsReceiptLineBatchRequest[];
+}
+
+export interface CreateGoodsReceiptRequest {
+  branchId: number;
+  warehouseId: number;
+  supplierId: number;
+  purchaseOrderId?: number | null;
+  invoiceNumber?: string | null;
+  invoiceDate?: string | null;
+  lines: GoodsReceiptLineRequest[];
+}
+
+export interface GoodsReceiptSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  branchId?: number | null;
+  supplierId?: number | null;
+  status?: string | null;
+}
+
+export interface CustomerDto {
+  id: number;
+  tenantId: number;
+  customerCode: string;
+  name: string;
+  cnic?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  creditLimit: number;
+  isPatient: boolean;
+  isActive: boolean;
+  balance: number;
+  availableCredit: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCustomerRequest {
+  customerCode?: string | null;
+  name: string;
+  cnic?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  creditLimit: number;
+  isPatient: boolean;
+}
+
+export interface CustomerSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  isActive?: boolean | null;
+  isPatient?: boolean | null;
+}
+
+export interface CustomerLedgerEntryDto {
+  id: number;
+  customerId: number;
+  branchId: number;
+  transactionDate: string;
+  transactionType: string;
+  referenceType?: string | null;
+  referenceId?: number | null;
+  debit: number;
+  credit: number;
+  sequenceNo: number;
+  remarks?: string | null;
+}
+
+export interface CustomerLedgerSearchParams {
+  page?: number;
+  pageSize?: number;
+  branchId?: number | null;
+  fromDate?: string | null;
+  toDate?: string | null;
 }
 
 export interface SupplierPaymentDto {

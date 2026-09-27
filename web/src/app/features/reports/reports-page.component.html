@@ -1,0 +1,68 @@
+<app-page-header title="Reports" subtitle="Sales summary and stock alert snapshots." />
+
+<div class="toolbar">
+  <app-input label="Sales from" type="date" [(ngModel)]="fromDate" />
+  <app-input label="Sales to" type="date" [(ngModel)]="toDate" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="refreshAll()" [loading]="salesLoading() || stockLoading()">Refresh</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="refreshAll()">Retry</app-button>
+  </div>
+}
+
+<section class="section">
+  <h2>Sales ({{ fromDate }} — {{ toDate }})</h2>
+  <p class="muted">Total net: {{ salesTotal() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</p>
+  @if (salesLoading()) {
+    <app-loading-state variant="table" />
+  } @else if (!sales().length) {
+    <app-empty-state title="No sales" message="No completed sales in this date range." />
+  } @else {
+    <app-table [columns]="salesColumns" [hasActions]="false">
+      @for (row of sales(); track row.id) {
+        <tr>
+          <td>{{ row.invoiceNumber }}</td>
+          <td>{{ row.saleDate | date: 'medium' }}</td>
+          <td><app-badge tone="success">{{ row.status }}</app-badge></td>
+          <td class="num">{{ row.netAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+        </tr>
+      }
+    </app-table>
+  }
+</section>
+
+<section class="section">
+  <h2>Low stock candidates</h2>
+  @if (stockLoading()) {
+    <app-loading-state variant="table" />
+  } @else if (!lowStock().length) {
+    <app-empty-state title="No low stock" message="Reorder rules did not flag any products." />
+  } @else {
+    <app-table [columns]="stockColumns" [hasActions]="false">
+      @for (row of lowStock(); track row.productId + '-' + row.branchId) {
+        <tr>
+          <td>{{ row.productName || row.productSku }}</td>
+          <td>{{ row.branchCode || row.branchId }}</td>
+          <td class="num">{{ row.onHandQuantity }}</td>
+          <td class="num">{{ row.reorderPoint }}</td>
+        </tr>
+      }
+    </app-table>
+  }
+</section>
+
+@if (alerts().length) {
+  <section class="section">
+    <h2>Open alerts ({{ alerts().length }})</h2>
+    <ul class="alert-list">
+      @for (a of alerts(); track a.id) {
+        <li><app-badge [tone]="a.severity === 'Critical' ? 'danger' : 'warning'">{{ a.severity }}</app-badge> {{ a.title }}</li>
+      }
+    </ul>
+  </section>
+}

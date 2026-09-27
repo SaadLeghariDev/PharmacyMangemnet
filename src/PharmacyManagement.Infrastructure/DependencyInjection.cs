@@ -69,7 +69,18 @@ public static class DependencyInjection
         services.AddScoped<IDoctorService, DoctorService>();
         services.AddScoped<IPrescriptionService, PrescriptionService>();
         services.AddScoped<IControlledDrugService, ControlledDrugService>();
-        services.AddSingleton<IFiscalGateway, MockFiscalGateway>();
+
+        services.Configure<FiscalOptions>(configuration.GetSection(FiscalOptions.SectionName));
+        services.AddHttpClient(LiveHttpFiscalGateway.HttpClientName, (sp, client) =>
+        {
+            var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<FiscalOptions>>().Value;
+            var seconds = opts.TimeoutSeconds > 0 ? opts.TimeoutSeconds : 30;
+            client.Timeout = TimeSpan.FromSeconds(seconds);
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+        });
+        services.AddSingleton<MockFiscalGateway>();
+        services.AddSingleton<LiveHttpFiscalGateway>();
+        services.AddSingleton<IFiscalGateway, SelectingFiscalGateway>();
         services.AddScoped<IFiscalService, FiscalService>();
 
         return services;

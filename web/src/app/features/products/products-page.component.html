@@ -1,0 +1,130 @@
+<app-page-header title="Products" subtitle="Product master — SKU, catalog attributes, and status.">
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">New product</app-button>
+</app-page-header>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="Name, SKU, generic…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  <app-select label="Status" [options]="statusOptions" [(ngModel)]="statusFilter" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state
+    title="No products found"
+    message="Create a product or adjust filters."
+    actionLabel="New product"
+    (action)="openCreate()"
+  />
+} @else {
+  <app-table
+    [columns]="columns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>{{ row.name }}</td>
+        <td>{{ row.genericName || '—' }}</td>
+        <td class="mono">{{ row.sku }}</td>
+        <td>{{ row.categoryName || row.categoryId }}</td>
+        <td>{{ row.form || '—' }}</td>
+        <td>
+          <app-badge [tone]="row.isActive ? 'success' : 'neutral'">
+            {{ row.isActive ? 'Active' : 'Inactive' }}
+          </app-badge>
+        </td>
+        <td>
+          <div class="row-actions">
+            <app-button variant="ghost" size="sm" (clicked)="openEdit(row)">Edit</app-button>
+            @if (row.isActive) {
+              <app-button variant="ghost" size="sm" (clicked)="deactivate(row)">Deactivate</app-button>
+            }
+          </div>
+        </td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal [open]="modalOpen()" [title]="editingId == null ? 'New product' : 'Edit product'" size="lg" (closed)="closeModal()">
+  <div class="form-grid">
+    @if (editingId == null) {
+      <app-input
+        label="SKU"
+        [required]="true"
+        [(ngModel)]="formSku"
+        [error]="formErrors['sku'] || ''"
+      />
+    }
+    <app-input label="Name" [required]="true" [(ngModel)]="formName" [error]="formErrors['name'] || ''" />
+    <app-input label="Generic name" [(ngModel)]="formGenericName" />
+    <app-select
+      label="Category"
+      [required]="true"
+      [options]="categoryOptions()"
+      [(ngModel)]="formCategoryId"
+      [error]="formErrors['categoryId'] || ''"
+    />
+    <app-select
+      label="Manufacturer"
+      [required]="true"
+      [options]="manufacturerOptions()"
+      [(ngModel)]="formManufacturerId"
+      [error]="formErrors['manufacturerId'] || ''"
+    />
+    <app-select
+      label="Brand"
+      [required]="true"
+      [options]="brandOptions()"
+      [(ngModel)]="formBrandId"
+      [error]="formErrors['brandId'] || ''"
+    />
+    <app-select
+      label="Therapeutic class"
+      [required]="true"
+      [options]="therapeuticOptions()"
+      [(ngModel)]="formTherapeuticClassId"
+      [error]="formErrors['therapeuticClassId'] || ''"
+    />
+    <app-input label="Form" [(ngModel)]="formForm" />
+    <app-input label="Strength" [(ngModel)]="formStrength" />
+    <app-input label="Strength unit" [(ngModel)]="formStrengthUnit" />
+    <app-input label="Pack description" [(ngModel)]="formPackDescription" />
+    @if (editingId != null) {
+      <app-select label="Active" [options]="activeEditOptions" [(ngModel)]="formIsActive" />
+    }
+    <div class="flags">
+      <label><input type="checkbox" [(ngModel)]="formPrescriptionRequired" /> Prescription required</label>
+      <label><input type="checkbox" [(ngModel)]="formIsControlled" /> Controlled</label>
+      <label><input type="checkbox" [(ngModel)]="formIsTemperatureSensitive" /> Temperature sensitive</label>
+      <label><input type="checkbox" [(ngModel)]="formIsRefrigerated" /> Refrigerated</label>
+      <label><input type="checkbox" [(ngModel)]="formIsReturnable" /> Returnable</label>
+      <label><input type="checkbox" [(ngModel)]="formIsSaleable" /> Saleable</label>
+    </div>
+  </div>
+  <div modal-footer>
+    <app-button variant="ghost" (clicked)="closeModal()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="submitForm()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>

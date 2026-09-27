@@ -1,0 +1,113 @@
+<app-page-header title="Purchases" subtitle="Purchase orders and goods receipts (GRN).">
+  @if (tab === 'po') {
+    <app-button variant="primary" size="sm" (clicked)="openPoCreate()">New PO</app-button>
+  } @else {
+    <app-button variant="primary" size="sm" (clicked)="openGrnCreate()">New GRN draft</app-button>
+  }
+</app-page-header>
+
+<div class="tabs">
+  <button type="button" class="tab" [class.active]="tab === 'po'" (click)="setTab('po')">Purchase orders</button>
+  <button type="button" class="tab" [class.active]="tab === 'grn'" (click)="setTab('grn')">Goods receipts</button>
+</div>
+
+<div class="toolbar">
+  <app-input label="Search" placeholder="Document number…" [(ngModel)]="search" (keydown)="$event.key === 'Enter' && applyFilters()" />
+  <app-select label="Status" [options]="statusOptions" [(ngModel)]="statusFilter" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="applyFilters()">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (tab === 'po') {
+  @if (!poRows().length) {
+    <app-empty-state title="No purchase orders" message="Create a PO to order stock from suppliers." actionLabel="New PO" (action)="openPoCreate()" />
+  } @else {
+    <app-table [columns]="poColumns" [hasActions]="true" [page]="page()" [hasNext]="hasNext()" [totalCount]="totalCount()" (pageChange)="loadPo($event)">
+      @for (row of poRows(); track row.id) {
+        <tr>
+          <td>{{ row.poNumber }}</td>
+          <td>{{ row.poDate | date: 'mediumDate' }}</td>
+          <td>{{ supplierName(row.supplierId) }}</td>
+          <td><app-badge [tone]="docStatusTone(row.status)">{{ row.status }}</app-badge></td>
+          <td>
+            <div class="row-actions">
+              @if (row.status === 'Draft') {
+                <app-button variant="ghost" size="sm" (clicked)="submitPo(row)">Submit</app-button>
+              }
+              @if (row.status === 'Submitted') {
+                <app-button variant="ghost" size="sm" (clicked)="approvePo(row)">Approve</app-button>
+              }
+            </div>
+          </td>
+        </tr>
+      }
+    </app-table>
+  }
+} @else {
+  @if (!grnRows().length) {
+    <app-empty-state title="No goods receipts" message="Create a GRN draft when stock arrives." actionLabel="New GRN draft" (action)="openGrnCreate()" />
+  } @else {
+    <app-table [columns]="grnColumns" [hasActions]="true" [page]="page()" [hasNext]="hasNext()" [totalCount]="totalCount()" (pageChange)="loadGrn($event)">
+      @for (row of grnRows(); track row.id) {
+        <tr>
+          <td>{{ row.grnNumber }}</td>
+          <td>{{ row.receiptDate | date: 'mediumDate' }}</td>
+          <td>{{ supplierName(row.supplierId) }}</td>
+          <td><app-badge [tone]="docStatusTone(row.status)">{{ row.status }}</app-badge></td>
+          <td>
+            @if (row.status === 'Draft') {
+              <app-button variant="ghost" size="sm" (clicked)="postGrn(row)">Post</app-button>
+            }
+          </td>
+        </tr>
+      }
+    </app-table>
+  }
+}
+
+<app-modal [open]="poModalOpen()" title="Create purchase order" size="md" (closed)="closePoCreate()">
+  <div class="form-grid">
+    <app-select label="Branch" [options]="branchOptions()" [(ngModel)]="poBranchId" [error]="formErrors['branch'] || ''" />
+    <app-select label="Warehouse" [options]="warehouseOptions()" [(ngModel)]="poWarehouseId" [error]="formErrors['warehouse'] || ''" />
+    <app-select label="Supplier" [options]="supplierOptions()" [(ngModel)]="poSupplierId" [error]="formErrors['supplier'] || ''" />
+    <app-input label="Product ID" type="number" [(ngModel)]="poProductId" [error]="formErrors['product'] || ''" />
+    <app-input label="Product unit ID" type="number" [(ngModel)]="poProductUnitId" [error]="formErrors['unit'] || ''" />
+    <app-input label="Quantity" type="number" [min]="0" [(ngModel)]="poQty" [error]="formErrors['qty'] || ''" />
+    <app-input label="Unit price" type="number" [min]="0" step="0.01" [(ngModel)]="poUnitPrice" [error]="formErrors['price'] || ''" />
+  </div>
+  <div modal-footer>
+    <app-button variant="ghost" (clicked)="closePoCreate()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="submitPoCreate()" [loading]="saving()">Create PO</app-button>
+  </div>
+</app-modal>
+
+<app-modal [open]="grnModalOpen()" title="Create GRN draft" size="lg" (closed)="closeGrnCreate()">
+  <div class="form-grid">
+    <app-select label="Branch" [options]="branchOptions()" [(ngModel)]="grnBranchId" [error]="formErrors['branch'] || ''" />
+    <app-select label="Warehouse" [options]="warehouseOptions()" [(ngModel)]="grnWarehouseId" (ngModelChange)="onGrnWarehouseChange()" [error]="formErrors['warehouse'] || ''" />
+    <app-select label="Supplier" [options]="supplierOptions()" [(ngModel)]="grnSupplierId" [error]="formErrors['supplier'] || ''" />
+    <app-input label="Product ID" type="number" [(ngModel)]="grnProductId" [error]="formErrors['product'] || ''" />
+    <app-input label="Product unit ID" type="number" [(ngModel)]="grnProductUnitId" [error]="formErrors['unit'] || ''" />
+    <app-input label="Quantity" type="number" [(ngModel)]="grnQty" [error]="formErrors['qty'] || ''" />
+    <app-input label="Unit cost" type="number" step="0.01" [(ngModel)]="grnUnitCost" [error]="formErrors['cost'] || ''" />
+    <app-input label="Batch number" [(ngModel)]="grnBatchNumber" [error]="formErrors['batch'] || ''" />
+    <app-input label="Expiry date" type="date" [(ngModel)]="grnExpiryDate" [error]="formErrors['expiry'] || ''" />
+    <app-input label="MRP" type="number" step="0.01" [(ngModel)]="grnMrp" />
+    <app-input label="Sale price" type="number" step="0.01" [(ngModel)]="grnSalePrice" />
+    <app-select label="Warehouse location" [options]="locationOptions()" [(ngModel)]="grnLocationId" [error]="formErrors['location'] || ''" />
+  </div>
+  <div modal-footer>
+    <app-button variant="ghost" (clicked)="closeGrnCreate()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="submitGrnCreate()" [loading]="saving()">Create draft</app-button>
+  </div>
+</app-modal>

@@ -3,6 +3,12 @@ import { authGuard, guestGuard } from './core/guards/auth.guard';
 import { LoginComponent } from './features/login/login.component';
 import { PosComponent } from './features/pos/pos.component';
 import { ExpensesPageComponent } from './features/expenses/expenses-page.component';
+import { ProductsPageComponent } from './features/products/products-page.component';
+import { InventoryPageComponent } from './features/inventory/inventory-page.component';
+import { PurchasesPageComponent } from './features/purchases/purchases-page.component';
+import { CustomersPageComponent } from './features/customers/customers-page.component';
+import { CustomerLedgerPageComponent } from './features/customers/customer-ledger-page.component';
+import { ReportsPageComponent } from './features/reports/reports-page.component';
 import { SupplierPaymentsPageComponent } from './features/supplier-payments/supplier-payments-page.component';
 import { PurchaseReturnsPageComponent } from './features/purchase-returns/purchase-returns-page.component';
 import { SuppliersPageComponent } from './features/suppliers/suppliers-page.component';
@@ -33,17 +39,18 @@ export const routes: Routes = [
     canActivate: [authGuard],
     component: ShellComponent,
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'pos' },
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'pos', component: PosComponent },
-      { path: 'products', component: ListPageComponent, data: { title: 'Products', kind: 'products' } },
-      { path: 'inventory', component: ListPageComponent, data: { title: 'Inventory', kind: 'inventory' } },
+      { path: 'products', component: ProductsPageComponent },
+      { path: 'inventory', component: InventoryPageComponent },
       { path: 'reorder-rules', component: ReorderRulesPageComponent },
-      { path: 'purchases', component: ListPageComponent, data: { title: 'Purchases', kind: 'purchases' } },
+      { path: 'purchases', component: PurchasesPageComponent },
       { path: 'suppliers', component: SuppliersPageComponent },
       { path: 'suppliers/:id/ledger', component: SupplierLedgerPageComponent },
       { path: 'supplier-payments', component: SupplierPaymentsPageComponent },
-      { path: 'customers', component: ListPageComponent, data: { title: 'Customers', kind: 'customers' } },
+      { path: 'customers', component: CustomersPageComponent },
+      { path: 'customers/:id/ledger', component: CustomerLedgerPageComponent },
       {
         path: 'sales-returns',
         component: ListPageComponent,
@@ -56,7 +63,7 @@ export const routes: Routes = [
       { path: 'product-prices', component: ProductPricesPageComponent },
       { path: 'tax-profiles', component: TaxProfilesPageComponent },
       { path: 'alerts', component: AlertsPageComponent },
-      { path: 'reports', component: ListPageComponent, data: { title: 'Reports', kind: 'reports' } },
+      { path: 'reports', component: ReportsPageComponent },
       { path: 'users', component: UsersPageComponent },
       { path: 'branches', component: BranchesPageComponent },
       { path: 'hardware', component: HardwarePageComponent },
@@ -64,5 +71,5 @@ export const routes: Routes = [
       { path: 'settings', component: SettingsPageComponent },
     ],
   },
-  { path: '**', redirectTo: 'pos' },
+  { path: '**', redirectTo: 'dashboard' },
 ];

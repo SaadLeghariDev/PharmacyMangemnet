@@ -7,11 +7,23 @@ import {
   BarcodeLookupDto,
   BranchDto,
   CartLine,
-  CounterDto,
+  CustomerDto,
+  CustomerLedgerEntryDto,
+  CustomerLedgerSearchParams,
+  CustomerSearchParams,
+  GoodsReceiptDto,
+  GoodsReceiptSearchParams,
+  PurchaseOrderDto,
+  PurchaseOrderSearchParams,
   CreateExpenseCategoryRequest,
   CreateExpenseRequest,
   CreatePriceListRequest,
   CreateProductPriceRequest,
+  CreateProductRequest,
+  CreatePurchaseOrderRequest,
+  CreateGoodsReceiptRequest,
+  CreateCustomerRequest,
+  CreateSupplierRequest,
   CreateReorderRuleRequest,
   CreateSaleRequest,
   CreateSupplierPaymentRequest,
@@ -37,6 +49,7 @@ import {
   ProductDto,
   ProductPriceDto,
   ProductPriceSearchParams,
+  ProductSearchParams,
   ProductTaxProfileDto,
   ReplaceProductTaxProfilesRequest,
   ReorderRuleDto,
@@ -52,6 +65,7 @@ import {
   BarcodePrintJobDto,
   ChartOfAccountDto,
   ChartOfAccountSearchParams,
+  CounterDto,
   CreateChartOfAccountRequest,
   CreateJournalEntryRequest,
   BarcodePrintJobSearchParams,
@@ -84,6 +98,10 @@ import {
   RoleSearchParams,
   SaleDto,
   SaleReceiptDto,
+  SaleSearchParams,
+  StockBalanceDto,
+  StockSearchParams,
+  NearExpirySearchParams,
   SimulateBarcodePrintJobRequest,
   SupplierDto,
   SupplierLedgerEntryDto,
@@ -116,6 +134,7 @@ import {
   UpdatePriceListRequest,
   UpdatePrintTemplateRequest,
   UpdateProductPriceRequest,
+  UpdateProductRequest,
   UpdateReasonCodeRequest,
   UpdateReorderRuleRequest,
   UpdateRoleRequest,
@@ -127,6 +146,7 @@ import {
   UserAdminDto,
   UserAdminSearchParams,
   WarehouseDto,
+  WarehouseLocationDto,
 } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -140,6 +160,215 @@ export class PharmacyApiService {
     if (search.trim()) params = params.set('search', search.trim());
     return this.http
       .get<ApiResponse<PagedResult<ProductDto>>>(`${this.base}/api/v1/products`, { params })
+      .pipe(map((r) => this.unwrap(r).items));
+  }
+
+  searchProductsPaged(params: ProductSearchParams = {}): Observable<PagedResult<ProductDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.categoryId != null) httpParams = httpParams.set('categoryId', params.categoryId);
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    return this.http
+      .get<ApiResponse<PagedResult<ProductDto>>>(`${this.base}/api/v1/products`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getProduct(id: number): Observable<ProductDto> {
+    return this.http
+      .get<ApiResponse<ProductDto>>(`${this.base}/api/v1/products/${id}`)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createProduct(request: CreateProductRequest): Observable<ProductDto> {
+    return this.http
+      .post<ApiResponse<ProductDto>>(`${this.base}/api/v1/products`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateProduct(id: number, request: UpdateProductRequest): Observable<ProductDto> {
+    return this.http
+      .put<ApiResponse<ProductDto>>(`${this.base}/api/v1/products/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  deactivateProduct(id: number): Observable<void> {
+    return this.http
+      .post<ApiResponse<unknown>>(`${this.base}/api/v1/products/${id}/deactivate`, {})
+      .pipe(map((r) => { this.unwrap(r); }));
+  }
+
+  getStock(params: StockSearchParams = {}): Observable<PagedResult<StockBalanceDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.productId != null) httpParams = httpParams.set('productId', params.productId);
+    if (params.warehouseId != null) httpParams = httpParams.set('warehouseId', params.warehouseId);
+    if (params.warehouseLocationId != null)
+      httpParams = httpParams.set('warehouseLocationId', params.warehouseLocationId);
+    if (params.batchId != null) httpParams = httpParams.set('batchId', params.batchId);
+    if (params.includeZero != null) httpParams = httpParams.set('includeZero', params.includeZero);
+    return this.http
+      .get<ApiResponse<PagedResult<StockBalanceDto>>>(`${this.base}/api/v1/inventory/stock`, {
+        params: httpParams,
+      })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getNearExpiry(params: NearExpirySearchParams = {}): Observable<PagedResult<StockBalanceDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20)
+      .set('daysAhead', params.daysAhead ?? 90);
+    if (params.warehouseId != null) httpParams = httpParams.set('warehouseId', params.warehouseId);
+    if (params.productId != null) httpParams = httpParams.set('productId', params.productId);
+    return this.http
+      .get<ApiResponse<PagedResult<StockBalanceDto>>>(`${this.base}/api/v1/inventory/near-expiry`, {
+        params: httpParams,
+      })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchPurchaseOrders(params: PurchaseOrderSearchParams = {}): Observable<PagedResult<PurchaseOrderDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.supplierId != null) httpParams = httpParams.set('supplierId', params.supplierId);
+    if (params.status) httpParams = httpParams.set('status', params.status);
+    return this.http
+      .get<ApiResponse<PagedResult<PurchaseOrderDto>>>(`${this.base}/api/v1/purchase-orders`, {
+        params: httpParams,
+      })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getPurchaseOrder(id: number): Observable<PurchaseOrderDto> {
+    return this.http
+      .get<ApiResponse<PurchaseOrderDto>>(`${this.base}/api/v1/purchase-orders/${id}`)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createPurchaseOrder(request: CreatePurchaseOrderRequest): Observable<PurchaseOrderDto> {
+    return this.http
+      .post<ApiResponse<PurchaseOrderDto>>(`${this.base}/api/v1/purchase-orders`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  submitPurchaseOrder(id: number): Observable<PurchaseOrderDto> {
+    return this.http
+      .post<ApiResponse<PurchaseOrderDto>>(`${this.base}/api/v1/purchase-orders/${id}/submit`, {})
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  approvePurchaseOrder(id: number): Observable<PurchaseOrderDto> {
+    return this.http
+      .post<ApiResponse<PurchaseOrderDto>>(`${this.base}/api/v1/purchase-orders/${id}/approve`, {})
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchGoodsReceipts(params: GoodsReceiptSearchParams = {}): Observable<PagedResult<GoodsReceiptDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.supplierId != null) httpParams = httpParams.set('supplierId', params.supplierId);
+    if (params.status) httpParams = httpParams.set('status', params.status);
+    return this.http
+      .get<ApiResponse<PagedResult<GoodsReceiptDto>>>(`${this.base}/api/v1/goods-receipts`, {
+        params: httpParams,
+      })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getGoodsReceipt(id: number): Observable<GoodsReceiptDto> {
+    return this.http
+      .get<ApiResponse<GoodsReceiptDto>>(`${this.base}/api/v1/goods-receipts/${id}`)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createGoodsReceiptDraft(request: CreateGoodsReceiptRequest): Observable<GoodsReceiptDto> {
+    return this.http
+      .post<ApiResponse<GoodsReceiptDto>>(`${this.base}/api/v1/goods-receipts`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  postGoodsReceipt(id: number): Observable<GoodsReceiptDto> {
+    return this.http
+      .post<ApiResponse<GoodsReceiptDto>>(`${this.base}/api/v1/goods-receipts/${id}/post`, {})
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchCustomers(params: CustomerSearchParams = {}): Observable<PagedResult<CustomerDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    if (params.isPatient != null) httpParams = httpParams.set('isPatient', params.isPatient);
+    return this.http
+      .get<ApiResponse<PagedResult<CustomerDto>>>(`${this.base}/api/v1/customers`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createCustomer(request: CreateCustomerRequest): Observable<CustomerDto> {
+    return this.http
+      .post<ApiResponse<CustomerDto>>(`${this.base}/api/v1/customers`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getCustomer(id: number): Observable<CustomerDto> {
+    return this.http
+      .get<ApiResponse<CustomerDto>>(`${this.base}/api/v1/customers/${id}`)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getCustomerLedger(
+    customerId: number,
+    params: CustomerLedgerSearchParams = {},
+  ): Observable<PagedResult<CustomerLedgerEntryDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    return this.http
+      .get<ApiResponse<PagedResult<CustomerLedgerEntryDto>>>(
+        `${this.base}/api/v1/customers/${customerId}/ledger`,
+        { params: httpParams },
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchSales(params: SaleSearchParams = {}): Observable<PagedResult<SaleDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.terminalId != null) httpParams = httpParams.set('terminalId', params.terminalId);
+    if (params.customerId != null) httpParams = httpParams.set('customerId', params.customerId);
+    if (params.status) httpParams = httpParams.set('status', params.status);
+    if (params.paymentStatus) httpParams = httpParams.set('paymentStatus', params.paymentStatus);
+    if (params.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    return this.http
+      .get<ApiResponse<PagedResult<SaleDto>>>(`${this.base}/api/v1/sales`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  listWarehouseLocations(warehouseId?: number, pageSize = 100): Observable<WarehouseLocationDto[]> {
+    let params = new HttpParams().set('pageSize', pageSize);
+    if (warehouseId != null) params = params.set('warehouseId', warehouseId);
+    return this.http
+      .get<ApiResponse<PagedResult<WarehouseLocationDto>>>(`${this.base}/api/v1/warehouse-locations`, {
+        params,
+      })
       .pipe(map((r) => this.unwrap(r).items));
   }
 
@@ -293,6 +522,12 @@ export class PharmacyApiService {
     return this.http
       .get<ApiResponse<PagedResult<SupplierDto>>>(`${this.base}/api/v1/suppliers`, { params })
       .pipe(map((r) => this.unwrap(r).items));
+  }
+
+  createSupplier(request: CreateSupplierRequest): Observable<SupplierDto> {
+    return this.http
+      .post<ApiResponse<SupplierDto>>(`${this.base}/api/v1/suppliers`, request)
+      .pipe(map((r) => this.unwrap(r)));
   }
 
   getSupplier(id: number): Observable<SupplierDto> {

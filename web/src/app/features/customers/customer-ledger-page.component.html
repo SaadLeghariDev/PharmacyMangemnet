@@ -1,0 +1,55 @@
+<app-page-header
+  [title]="customer() ? 'Ledger — ' + customer()!.name : 'Customer ledger'"
+  subtitle="Debit and credit entries for this customer account."
+>
+  <a routerLink="/customers" class="header-link">Back to customers</a>
+</app-page-header>
+
+<div class="toolbar">
+  <app-input label="From" type="date" [(ngModel)]="fromDate" />
+  <app-input label="To" type="date" [(ngModel)]="toDate" />
+  <app-select label="Branch" [options]="branchOptions()" [(ngModel)]="branchFilter" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state title="No ledger entries" message="Sales and payments for this customer will appear here." />
+} @else {
+  <app-table
+    [columns]="columns"
+    [hasActions]="false"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>{{ row.transactionDate | date: 'mediumDate' }}</td>
+        <td>{{ row.transactionType }}</td>
+        <td>
+          {{ row.referenceType || '—' }}
+          @if (row.referenceId) {
+            #{{ row.referenceId }}
+          }
+        </td>
+        <td class="num">{{ row.debit | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+        <td class="num">{{ row.credit | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+        <td>{{ row.remarks || '—' }}</td>
+      </tr>
+    }
+  </app-table>
+}

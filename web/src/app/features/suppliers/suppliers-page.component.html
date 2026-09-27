@@ -1,6 +1,7 @@
 <app-page-header title="Suppliers" subtitle="Supplier master, payments, and ledger access.">
   <a routerLink="/supplier-payments" class="header-link">Payments</a>
   <a routerLink="/purchase-returns" class="header-link">Purchase returns</a>
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">New supplier</app-button>
 </app-page-header>
 
 <div class="toolbar">
@@ -46,3 +47,17 @@
     }
   </app-table>
 }
+
+<app-modal [open]="createOpen()" title="New supplier" size="md" (closed)="closeCreate()">
+  <div class="form-grid">
+    <app-input label="Code" [required]="true" [(ngModel)]="createCode" [error]="createErrors['code'] || ''" />
+    <app-input label="Name" [required]="true" [(ngModel)]="createName" [error]="createErrors['name'] || ''" />
+    <app-input label="Phone" [(ngModel)]="createPhone" />
+    <app-input label="Payment terms (days)" type="number" [min]="0" [(ngModel)]="createTermsDays" />
+    <app-input label="Credit limit" type="number" [min]="0" step="0.01" [(ngModel)]="createCreditLimit" />
+  </div>
+  <div modal-footer>
+    <app-button variant="ghost" (clicked)="closeCreate()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="submitCreate()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>

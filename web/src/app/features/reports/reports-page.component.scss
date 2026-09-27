@@ -1,0 +1,30 @@
+@import '../finance/finance-page.component.scss';
+
+.section {
+  margin-top: 1.25rem;
+}
+
+.section h2 {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.muted {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.alert-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

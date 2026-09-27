@@ -1,0 +1,54 @@
+<app-page-header title="Customers" subtitle="Customer master and account balances.">
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">New customer</app-button>
+</app-page-header>
+
+<div class="toolbar">
+  <app-input label="Search" placeholder="Code, name, phone…" [(ngModel)]="search" (keydown)="$event.key === 'Enter' && applyFilters()" />
+  <app-select label="Status" [options]="statusOptions" [(ngModel)]="statusFilter" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state title="No customers" message="Add a customer or clear filters." actionLabel="New customer" (action)="openCreate()" />
+} @else {
+  <app-table [columns]="columns" [hasActions]="true" [page]="page()" [hasNext]="hasNext()" [totalCount]="totalCount()" (pageChange)="load($event)">
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>{{ row.customerCode }}</td>
+        <td>{{ row.name }}</td>
+        <td>{{ row.phone || '—' }}</td>
+        <td class="num">{{ row.balance | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+        <td>
+          <app-badge [tone]="row.isActive ? 'success' : 'neutral'">{{ row.isActive ? 'Active' : 'Inactive' }}</app-badge>
+        </td>
+        <td>
+          <a [routerLink]="['/customers', row.id, 'ledger']" class="row-link">Ledger</a>
+        </td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal [open]="createOpen()" title="New customer" size="md" (closed)="closeCreate()">
+  <div class="form-grid">
+    <app-input label="Name" [required]="true" [(ngModel)]="createName" [error]="createErrors['name'] || ''" />
+    <app-input label="Phone" [(ngModel)]="createPhone" />
+    <app-input label="Credit limit" type="number" [min]="0" step="0.01" [(ngModel)]="createCreditLimit" />
+    <label class="check"><input type="checkbox" [(ngModel)]="createIsPatient" /> Is patient</label>
+  </div>
+  <div modal-footer>
+    <app-button variant="ghost" (clicked)="closeCreate()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="submitCreate()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>

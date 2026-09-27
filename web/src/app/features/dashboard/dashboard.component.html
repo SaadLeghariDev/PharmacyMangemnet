@@ -1,0 +1,52 @@
+<div class="dashboard">
+  <app-page-header title="Dashboard" subtitle="Today’s pharmacy snapshot and quick links.">
+    <div class="links">
+      <a routerLink="/pos"><app-button size="sm">Open POS</app-button></a>
+      <a routerLink="/alerts"><app-button variant="secondary" size="sm">Alerts</app-button></a>
+      <a routerLink="/inventory"><app-button variant="secondary" size="sm">Inventory</app-button></a>
+    </div>
+  </app-page-header>
+
+  @if (error()) {
+    <div class="error-banner" role="alert">
+      <span>{{ error() }}</span>
+      <app-button variant="secondary" size="sm" (clicked)="load()">Retry</app-button>
+    </div>
+  }
+
+  @if (loading()) {
+    <app-loading-state variant="page" />
+  } @else {
+    <div class="widgets">
+      <article class="widget">
+        <h2>Today’s sales</h2>
+        <div class="value">{{ todaySalesTotal() | currency: 'PKR':'symbol-narrow':'1.0-0' }}</div>
+      </article>
+      <article class="widget">
+        <h2>Low stock items</h2>
+        <div class="value">{{ lowStockCount() }}</div>
+      </article>
+      <article class="widget">
+        <h2>Near expiry (90d)</h2>
+        <div class="value">{{ nearExpiryCount() }}</div>
+      </article>
+    </div>
+
+    <section class="panel">
+      <h2>Recent sales</h2>
+      @if (!recentSales().length) {
+        <app-empty-state title="No sales yet" message="Completed sales will appear here." />
+      } @else {
+        <app-table [columns]="saleColumns" [hasActions]="false">
+          @for (row of recentSales(); track row.id) {
+            <tr>
+              <td>{{ row.invoiceNumber }}</td>
+              <td>{{ row.saleDate | date: 'short' }}</td>
+              <td class="num">{{ row.netAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+            </tr>
+          }
+        </app-table>
+      }
+    </section>
+  }
+</div>

@@ -1,59 +1,84 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { AppButtonComponent, AppPageHeaderComponent } from '../../shared';
+import { forkJoin } from 'rxjs';
+import { PharmacyApiService } from '../../core/services/pharmacy-api.service';
+import { SaleDto } from '../../core/models/api.models';
+import {
+  AppButtonComponent,
+  AppEmptyStateComponent,
+  AppLoadingStateComponent,
+  AppPageHeaderComponent,
+  AppTableColumn,
+  AppTableComponent,
+} from '../../shared';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, AppPageHeaderComponent, AppButtonComponent],
-  template: `
-    <app-page-header
-      title="Dashboard"
-      subtitle="Actionable pharmacy overview. Open POS to ring sales."
-    >
-      <a routerLink="/pos"><app-button>Open POS</app-button></a>
-    </app-page-header>
-
-    <div class="grid">
-      <article>
-        <h2>Today’s focus</h2>
-        <p>
-          Use <strong>Sales / POS</strong> for barcode sales, holds, and receipts. List modules follow
-          the shared table pattern and will deepen in later slices.
-        </p>
-      </article>
-      <article>
-        <h2>Alerts</h2>
-        <p>Low stock, expiry, and pending payment widgets will appear here once reporting APIs are wired.</p>
-      </article>
-    </div>
-  `,
-  styles: [
-    `
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 0.75rem;
-      }
-      article {
-        padding: 1rem;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        background: var(--color-surface);
-      }
-      h2 {
-        font-size: 0.95rem;
-        margin-bottom: 0.35rem;
-      }
-      p {
-        color: var(--color-text-secondary);
-        font-size: 0.875rem;
-        line-height: 1.5;
-      }
-      a {
-        text-decoration: none;
-      }
-    `,
+  imports: [
+    CommonModule,
+    RouterLink,
+    CurrencyPipe,
+    DatePipe,
+    AppPageHeaderComponent,
+    AppButtonComponent,
+    AppTableComponent,
+    AppEmptyStateComponent,
+    AppLoadingStateComponent,
   ],
+  templateUrl: './dashboard.component.html',
+  styleUrl: './dashboard.component.scss',
 })
-export class DashboardComponent {}
+export class DashboardComponent implements OnInit {
+  readonly saleColumns: AppTableColumn[] = [
+    { key: 'invoice', label: 'Invoice' },
+    { key: 'date', label: 'Time' },
+    { key: 'amount', label: 'Net' },
+  ];
+
+  readonly loading = signal(true);
+  readonly error = signal('');
+  readonly todaySalesTotal = signal(0);
+  readonly lowStockCount = signal(0);
+  readonly nearExpiryCount = signal(0);
+  readonly recentSales = signal<SaleDto[]>([]);
+
+  constructor(private readonly api: PharmacyApiService) {}
+
+  ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.loading.set(true);
+    this.error.set('');
+    const today = new Date().toISOString().slice(0, 10);
+    const from = new Date(today).toISOString();
+
+    forkJoin({
+      todaySales: this.api.searchSales({
+        page: 1,
+        pageSize: 500,
+        fromDate: from,
+        toDate: `${today}T23:59:59`,
+        status: 'Completed',
+      }),
+      recent: this.api.searchSales({ page: 1, pageSize: 10, status: 'Completed' }),
+      lowStock: this.api.searchLowStockCandidates({ page: 1, pageSize: 1 }),
+      nearExpiry: this.api.getNearExpiry({ page: 1, pageSize: 1, daysAhead: 90 }),
+    }).subscribe({
+      next: ({ todaySales, recent, lowStock, nearExpiry }) => {
+        this.todaySalesTotal.set(todaySales.items.reduce((s, r) => s + r.netAmount, 0));
+        this.recentSales.set(recent.items);
+        this.lowStockCount.set(lowStock.totalCount);
+        this.nearExpiryCount.set(nearExpiry.totalCount);
+        this.loading.set(false);
+      },
+      error: (err: unknown) => {
+        this.loading.set(false);
+        this.error.set(err instanceof Error ? err.message : 'Could not load dashboard.');
+      },
+    });
+  }
+}
