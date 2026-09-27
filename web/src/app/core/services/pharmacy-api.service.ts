@@ -43,6 +43,18 @@ import {
   AlertRuleDto,
   AlertRuleSearchParams,
   AlertSearchParams,
+  AuditLogDto,
+  AuditLogSearchParams,
+  BranchSettingDto,
+  CreateBranchRequest,
+  CreateReasonCodeRequest,
+  CreateRoleRequest,
+  CreateUserRequest,
+  PermissionDto,
+  ReasonCodeDto,
+  ReasonCodeSearchParams,
+  RoleDto,
+  RoleSearchParams,
   SaleDto,
   SaleReceiptDto,
   SupplierDto,
@@ -55,13 +67,21 @@ import {
   TaxProfileDto,
   TaxProfileSearchParams,
   TaxRateDto,
+  TenantSettingDto,
   UpdateAlertRuleRequest,
+  UpdateBranchRequest,
   UpdateExpenseCategoryRequest,
   UpdatePriceListRequest,
   UpdateProductPriceRequest,
+  UpdateReasonCodeRequest,
   UpdateReorderRuleRequest,
+  UpdateRoleRequest,
   UpdateTaxProfileRequest,
   UpdateTaxRateRequest,
+  UpdateUserRequest,
+  UpsertSettingRequest,
+  UserAdminDto,
+  UserAdminSearchParams,
   WarehouseDto,
 } from '../models/api.models';
 
@@ -562,6 +582,169 @@ export class PharmacyApiService {
     } catch {
       return [];
     }
+  }
+
+  searchUsers(params: UserAdminSearchParams = {}): Observable<PagedResult<UserAdminDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    return this.http
+      .get<ApiResponse<PagedResult<UserAdminDto>>>(`${this.base}/api/v1/users`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createUser(request: CreateUserRequest): Observable<UserAdminDto> {
+    return this.http
+      .post<ApiResponse<UserAdminDto>>(`${this.base}/api/v1/users`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateUser(id: number, request: UpdateUserRequest): Observable<UserAdminDto> {
+    return this.http
+      .put<ApiResponse<UserAdminDto>>(`${this.base}/api/v1/users/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  deactivateUser(id: number): Observable<void> {
+    return this.http
+      .post<ApiResponse<unknown>>(`${this.base}/api/v1/users/${id}/deactivate`, {})
+      .pipe(map((r) => { this.unwrap(r); }));
+  }
+
+  assignUserRoles(id: number, roleIds: number[]): Observable<UserAdminDto> {
+    return this.http
+      .put<ApiResponse<UserAdminDto>>(`${this.base}/api/v1/users/${id}/roles`, { roleIds })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  assignUserBranches(id: number, branchIds: number[]): Observable<UserAdminDto> {
+    return this.http
+      .put<ApiResponse<UserAdminDto>>(`${this.base}/api/v1/users/${id}/branches`, { branchIds })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchRoles(params: RoleSearchParams = {}): Observable<PagedResult<RoleDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 50);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.isSystemRole != null) httpParams = httpParams.set('isSystemRole', params.isSystemRole);
+    return this.http
+      .get<ApiResponse<PagedResult<RoleDto>>>(`${this.base}/api/v1/roles`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createRole(request: CreateRoleRequest): Observable<RoleDto> {
+    return this.http
+      .post<ApiResponse<RoleDto>>(`${this.base}/api/v1/roles`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateRole(id: number, request: UpdateRoleRequest): Observable<RoleDto> {
+    return this.http
+      .put<ApiResponse<RoleDto>>(`${this.base}/api/v1/roles/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  assignRolePermissions(id: number, permissionIds: number[]): Observable<RoleDto> {
+    return this.http
+      .put<ApiResponse<RoleDto>>(`${this.base}/api/v1/roles/${id}/permissions`, { permissionIds })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  listPermissions(pageSize = 100): Observable<PermissionDto[]> {
+    return this.http
+      .get<ApiResponse<PagedResult<PermissionDto>>>(`${this.base}/api/v1/permissions`, {
+        params: { pageSize },
+      })
+      .pipe(map((r) => this.unwrap(r).items));
+  }
+
+  createBranch(request: CreateBranchRequest): Observable<BranchDto> {
+    return this.http
+      .post<ApiResponse<BranchDto>>(`${this.base}/api/v1/branches`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateBranch(id: number, request: UpdateBranchRequest): Observable<BranchDto> {
+    return this.http
+      .put<ApiResponse<BranchDto>>(`${this.base}/api/v1/branches/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  deactivateBranch(id: number): Observable<void> {
+    return this.http
+      .post<ApiResponse<unknown>>(`${this.base}/api/v1/branches/${id}/deactivate`, {})
+      .pipe(map((r) => { this.unwrap(r); }));
+  }
+
+  searchTenantSettings(search?: string, page = 1, pageSize = 50): Observable<PagedResult<TenantSettingDto>> {
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    if (search?.trim()) params = params.set('search', search.trim());
+    return this.http
+      .get<ApiResponse<PagedResult<TenantSettingDto>>>(`${this.base}/api/v1/tenant-settings`, { params })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  upsertTenantSetting(request: UpsertSettingRequest): Observable<TenantSettingDto> {
+    return this.http
+      .put<ApiResponse<TenantSettingDto>>(`${this.base}/api/v1/tenant-settings`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchBranchSettings(branchId?: number, search?: string, page = 1, pageSize = 50): Observable<PagedResult<BranchSettingDto>> {
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    if (branchId != null) params = params.set('branchId', branchId);
+    if (search?.trim()) params = params.set('search', search.trim());
+    return this.http
+      .get<ApiResponse<PagedResult<BranchSettingDto>>>(`${this.base}/api/v1/branch-settings`, { params })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  upsertBranchSetting(branchId: number, request: UpsertSettingRequest): Observable<BranchSettingDto> {
+    return this.http
+      .put<ApiResponse<BranchSettingDto>>(`${this.base}/api/v1/branch-settings/${branchId}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchReasonCodes(params: ReasonCodeSearchParams = {}): Observable<PagedResult<ReasonCodeDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 50);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.reasonType) httpParams = httpParams.set('reasonType', params.reasonType);
+    if (params.isActive != null) httpParams = httpParams.set('isActive', params.isActive);
+    return this.http
+      .get<ApiResponse<PagedResult<ReasonCodeDto>>>(`${this.base}/api/v1/reason-codes`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createReasonCode(request: CreateReasonCodeRequest): Observable<ReasonCodeDto> {
+    return this.http
+      .post<ApiResponse<ReasonCodeDto>>(`${this.base}/api/v1/reason-codes`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  updateReasonCode(id: number, request: UpdateReasonCodeRequest): Observable<ReasonCodeDto> {
+    return this.http
+      .put<ApiResponse<ReasonCodeDto>>(`${this.base}/api/v1/reason-codes/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchAuditLogs(params: AuditLogSearchParams = {}): Observable<PagedResult<AuditLogDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.entityName) httpParams = httpParams.set('entityName', params.entityName);
+    if (params.action) httpParams = httpParams.set('action', params.action);
+    if (params.userId != null) httpParams = httpParams.set('userId', params.userId);
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    return this.http
+      .get<ApiResponse<PagedResult<AuditLogDto>>>(`${this.base}/api/v1/audit-logs`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
   }
 
   private unwrap<T>(res: ApiResponse<T>): T {

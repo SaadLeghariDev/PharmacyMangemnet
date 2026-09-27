@@ -1,0 +1,223 @@
+<app-page-header
+  title="Users & Roles"
+  subtitle="Manage pharmacy users, role membership, branch access, and permission grants."
+>
+  @if (tab === 'users') {
+    <app-button variant="primary" size="sm" (clicked)="openCreateUser()">New user</app-button>
+  } @else {
+    <app-button variant="primary" size="sm" (clicked)="openCreateRole()">New role</app-button>
+  }
+</app-page-header>
+
+<div class="tabs">
+  <button type="button" class="tab" [class.active]="tab === 'users'" (click)="setTab('users')">Users</button>
+  <button type="button" class="tab" [class.active]="tab === 'roles'" (click)="setTab('roles')">Roles</button>
+</div>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    [placeholder]="tab === 'users' ? 'Username, name, email…' : 'Role name…'"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  @if (tab === 'users') {
+    <app-select label="Status" [options]="activeOptions" [(ngModel)]="activeFilter" />
+  }
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (tab === 'users' && !users().length) {
+  <app-empty-state
+    title="No users"
+    message="Create a user account and assign roles and branches."
+    actionLabel="New user"
+    (action)="openCreateUser()"
+  />
+} @else if (tab === 'roles' && !roles().length) {
+  <app-empty-state
+    title="No roles"
+    message="Create a role, then assign permissions from the catalog."
+    actionLabel="New role"
+    (action)="openCreateRole()"
+  />
+} @else if (tab === 'users') {
+  <app-table
+    [columns]="userColumns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of users(); track row.id) {
+      <tr>
+        <td>
+          <div class="primary">{{ row.fullName }}</div>
+          <div class="muted">{{ row.username }}</div>
+        </td>
+        <td>
+          <div>{{ row.email || '—' }}</div>
+          <div class="muted">{{ row.phone || '—' }}</div>
+        </td>
+        <td>{{ row.roleNames.join(', ') || '—' }}</td>
+        <td>{{ branchLabel(row.branchIds) }}</td>
+        <td>
+          <app-badge [tone]="row.isActive ? 'success' : 'warning'">
+            {{ row.isActive ? 'Active' : 'Inactive' }}
+          </app-badge>
+        </td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openEditUser(row)">Edit</app-button>
+          <app-button variant="ghost" size="sm" (clicked)="openAssignRoles(row)">Roles</app-button>
+          <app-button variant="ghost" size="sm" (clicked)="openAssignBranches(row)">Branches</app-button>
+          @if (row.isActive) {
+            <app-button variant="ghost" size="sm" (clicked)="deactivateUser(row)">Deactivate</app-button>
+          }
+        </td>
+      </tr>
+    }
+  </app-table>
+} @else {
+  <app-table
+    [columns]="roleColumns"
+    [hasActions]="true"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of roles(); track row.id) {
+      <tr>
+        <td>
+          <div class="primary">{{ row.name }}</div>
+          <div class="muted">{{ row.description || '—' }}</div>
+        </td>
+        <td>
+          <span class="muted">{{ row.permissionCodes.length }} granted</span>
+        </td>
+        <td>
+          <app-badge [tone]="row.isSystemRole ? 'info' : 'warning'">
+            {{ row.isSystemRole ? 'System' : 'Custom' }}
+          </app-badge>
+        </td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openEditRole(row)">Edit</app-button>
+          <app-button variant="ghost" size="sm" (clicked)="openAssignPermissions(row)">Permissions</app-button>
+        </td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal
+  [open]="modalOpen()"
+  [title]="
+    modalMode === 'user'
+      ? editingUserId == null
+        ? 'New user'
+        : 'Edit user'
+      : editingRoleId == null
+        ? 'New role'
+        : 'Edit role'
+  "
+  size="md"
+  (closed)="closeModal()"
+>
+  @if (modalMode === 'user') {
+    <div class="form-grid">
+      <app-input label="Username" [(ngModel)]="formUsername" [disabled]="editingUserId != null" />
+      <app-input
+        label="Password"
+        type="password"
+        [(ngModel)]="formPassword"
+        [placeholder]="editingUserId ? 'Leave blank to keep' : 'Required'"
+      />
+      <app-input label="Full name" [(ngModel)]="formFullName" />
+      <app-input label="Email" [(ngModel)]="formEmail" />
+      <app-input label="Phone" [(ngModel)]="formPhone" />
+      <app-input label="Employee code" [(ngModel)]="formEmployeeCode" />
+      <label class="check">
+        <input type="checkbox" [(ngModel)]="formActive" />
+        Active
+      </label>
+    </div>
+  } @else {
+    <div class="form-grid">
+      <app-input label="Role name" [(ngModel)]="formRoleName" />
+      <app-input label="Description" [(ngModel)]="formRoleDescription" />
+    </div>
+  }
+  <div class="modal-actions">
+    <app-button variant="ghost" (clicked)="closeModal()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="saveModal()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>
+
+<app-modal
+  [open]="assignOpen()"
+  [title]="
+    modalMode === 'assign-roles'
+      ? 'Assign roles'
+      : modalMode === 'assign-branches'
+        ? 'Assign branches'
+        : 'Assign permissions'
+  "
+  size="md"
+  (closed)="closeAssign()"
+>
+  <div class="checklist">
+    @if (modalMode === 'assign-roles') {
+      @for (role of roleCatalog(); track role.id) {
+        <label class="check">
+          <input
+            type="checkbox"
+            [checked]="selectedRoleIds.has(role.id)"
+            (change)="toggleRole(role.id, $any($event.target).checked)"
+          />
+          {{ role.name }}
+        </label>
+      }
+    } @else if (modalMode === 'assign-branches') {
+      @for (branch of branches(); track branch.id) {
+        <label class="check">
+          <input
+            type="checkbox"
+            [checked]="selectedBranchIds.has(branch.id)"
+            (change)="toggleBranch(branch.id, $any($event.target).checked)"
+          />
+          {{ branch.code }} — {{ branch.name }}
+        </label>
+      }
+    } @else {
+      @for (perm of permissions(); track perm.id) {
+        <label class="check">
+          <input
+            type="checkbox"
+            [checked]="selectedPermissionIds.has(perm.id)"
+            (change)="togglePermission(perm.id, $any($event.target).checked)"
+          />
+          <span><strong>{{ perm.code }}</strong> — {{ perm.name }}</span>
+        </label>
+      }
+    }
+  </div>
+  <div class="modal-actions">
+    <app-button variant="ghost" (clicked)="closeAssign()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="saveAssign()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>

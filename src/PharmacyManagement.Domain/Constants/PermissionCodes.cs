@@ -112,6 +112,26 @@ public static class NotificationLogStatuses
     public const string Failed = "Failed";
 }
 
+public static class ReasonTypes
+{
+    public const string Return = "Return";
+    public const string Adjustment = "Adjustment";
+    public const string Count = "Count";
+    public const string Void = "Void";
+    public const string Other = "Other";
+
+    private static readonly HashSet<string> Known = new(StringComparer.OrdinalIgnoreCase)
+    {
+        Return, Adjustment, Count, Void, Other
+    };
+
+    public static bool IsKnown(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && Known.Contains(value);
+
+    public static string Normalize(string value) =>
+        Known.First(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
+}
+
 public static class AppClaimTypes
 {
     public const string UserId = "uid";

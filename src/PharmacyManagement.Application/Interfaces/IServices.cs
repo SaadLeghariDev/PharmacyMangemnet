@@ -1,4 +1,5 @@
 using PharmacyManagement.Application.Common;
+using PharmacyManagement.Application.DTOs.Admin;
 using PharmacyManagement.Application.DTOs.Alerts;
 using PharmacyManagement.Application.DTOs.Auth;
 using PharmacyManagement.Application.DTOs.Cash;
@@ -356,4 +357,50 @@ public interface INotificationTemplateService
     Task<NotificationTemplateDto> CreateAsync(CreateNotificationTemplateRequest request, CancellationToken ct = default);
     Task<NotificationTemplateDto> UpdateAsync(long id, UpdateNotificationTemplateRequest request, CancellationToken ct = default);
     Task<PagedResult<NotificationLogDto>> SearchLogsAsync(NotificationLogQuery query, CancellationToken ct = default);
+}
+
+public interface IUserAdminService
+{
+    Task<PagedResult<UserAdminDto>> SearchAsync(UserAdminQuery query, CancellationToken ct = default);
+    Task<UserAdminDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<UserAdminDto> CreateAsync(CreateUserRequest request, CancellationToken ct = default);
+    Task<UserAdminDto> UpdateAsync(long id, UpdateUserRequest request, CancellationToken ct = default);
+    Task DeactivateAsync(long id, CancellationToken ct = default);
+    Task<UserAdminDto> AssignRolesAsync(long id, AssignUserRolesRequest request, CancellationToken ct = default);
+    Task<UserAdminDto> AssignBranchesAsync(long id, AssignUserBranchesRequest request, CancellationToken ct = default);
+}
+
+public interface IRoleAdminService
+{
+    Task<PagedResult<RoleDto>> SearchAsync(RoleQuery query, CancellationToken ct = default);
+    Task<RoleDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<RoleDto> CreateAsync(CreateRoleRequest request, CancellationToken ct = default);
+    Task<RoleDto> UpdateAsync(long id, UpdateRoleRequest request, CancellationToken ct = default);
+    Task<RoleDto> AssignPermissionsAsync(long id, AssignRolePermissionsRequest request, CancellationToken ct = default);
+    Task<PagedResult<PermissionDto>> SearchPermissionsAsync(PermissionQuery query, CancellationToken ct = default);
+}
+
+public interface ISettingsService
+{
+    Task<PagedResult<TenantSettingDto>> SearchTenantSettingsAsync(SettingQuery query, CancellationToken ct = default);
+    Task<TenantSettingDto?> GetTenantSettingAsync(string key, CancellationToken ct = default);
+    Task<TenantSettingDto> UpsertTenantSettingAsync(UpsertSettingRequest request, CancellationToken ct = default);
+
+    Task<PagedResult<BranchSettingDto>> SearchBranchSettingsAsync(BranchSettingQuery query, CancellationToken ct = default);
+    Task<BranchSettingDto?> GetBranchSettingAsync(long branchId, string key, CancellationToken ct = default);
+    Task<BranchSettingDto> UpsertBranchSettingAsync(long branchId, UpsertSettingRequest request, CancellationToken ct = default);
+}
+
+public interface IReasonCodeService
+{
+    Task<PagedResult<ReasonCodeDto>> SearchAsync(ReasonCodeQuery query, CancellationToken ct = default);
+    Task<ReasonCodeDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<ReasonCodeDto> CreateAsync(CreateReasonCodeRequest request, CancellationToken ct = default);
+    Task<ReasonCodeDto> UpdateAsync(long id, UpdateReasonCodeRequest request, CancellationToken ct = default);
+}
+
+public interface IAuditLogService
+{
+    Task<PagedResult<AuditLogDto>> SearchAsync(AuditLogQuery query, CancellationToken ct = default);
+    Task<AuditLogDto?> GetByIdAsync(long id, CancellationToken ct = default);
 }

@@ -54,6 +54,11 @@ public static class DependencyInjection
         services.AddScoped<IAlertRuleService, AlertRuleService>();
         services.AddScoped<IAlertService, AlertService>();
         services.AddScoped<INotificationTemplateService, NotificationTemplateService>();
+        services.AddScoped<IUserAdminService, UserAdminService>();
+        services.AddScoped<IRoleAdminService, RoleAdminService>();
+        services.AddScoped<ISettingsService, SettingsService>();
+        services.AddScoped<IReasonCodeService, ReasonCodeService>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<IDoctorService, DoctorService>();
         services.AddScoped<IPrescriptionService, PrescriptionService>();
         services.AddScoped<IControlledDrugService, ControlledDrugService>();

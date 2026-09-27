@@ -12,6 +12,9 @@ import { ProductPricesPageComponent } from './features/product-prices/product-pr
 import { TaxProfilesPageComponent } from './features/tax-profiles/tax-profiles-page.component';
 import { ReorderRulesPageComponent } from './features/reorder-rules/reorder-rules-page.component';
 import { AlertsPageComponent } from './features/alerts/alerts-page.component';
+import { UsersPageComponent } from './features/users/users-page.component';
+import { BranchesPageComponent } from './features/branches/branches-page.component';
+import { SettingsPageComponent } from './features/settings/settings-page.component';
 import { ListPageComponent } from './features/stub/list-page.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { ShellComponent } from './layout/shell.component';
@@ -50,9 +53,9 @@ export const routes: Routes = [
       { path: 'tax-profiles', component: TaxProfilesPageComponent },
       { path: 'alerts', component: AlertsPageComponent },
       { path: 'reports', component: ListPageComponent, data: { title: 'Reports', kind: 'reports' } },
-      { path: 'users', component: ListPageComponent, data: { title: 'Users & Roles', kind: 'users' } },
-      { path: 'branches', component: ListPageComponent, data: { title: 'Branches', kind: 'branches' } },
-      { path: 'settings', component: ListPageComponent, data: { title: 'Settings', kind: 'settings' } },
+      { path: 'users', component: UsersPageComponent },
+      { path: 'branches', component: BranchesPageComponent },
+      { path: 'settings', component: SettingsPageComponent },
     ],
   },
   { path: '**', redirectTo: 'pos' },

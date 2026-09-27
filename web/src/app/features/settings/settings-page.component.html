@@ -1,0 +1,136 @@
+<app-page-header
+  title="Settings"
+  subtitle="Tenant and branch settings, inventory/void reason codes, and audit log search."
+>
+  @if (tab === 'tenant') {
+    <app-button variant="primary" size="sm" (clicked)="openUpsertTenant()">Upsert setting</app-button>
+  } @else if (tab === 'branch') {
+    <app-button variant="primary" size="sm" (clicked)="openUpsertBranch()">Upsert setting</app-button>
+  } @else if (tab === 'reasons') {
+    <app-button variant="primary" size="sm" (clicked)="openCreateReason()">New reason</app-button>
+  }
+</app-page-header>
+
+<div class="tabs">
+  <button type="button" class="tab" [class.active]="tab === 'tenant'" (click)="setTab('tenant')">Tenant</button>
+  <button type="button" class="tab" [class.active]="tab === 'branch'" (click)="setTab('branch')">Branch</button>
+  <button type="button" class="tab" [class.active]="tab === 'reasons'" (click)="setTab('reasons')">Reason codes</button>
+  <button type="button" class="tab" [class.active]="tab === 'audit'" (click)="setTab('audit')">Audit logs</button>
+</div>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="Key, value, entity…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  @if (tab === 'branch' || tab === 'audit') {
+    <app-select label="Branch" [options]="branchOptions" [(ngModel)]="branchFilter" />
+  }
+  @if (tab === 'reasons') {
+    <app-select label="Type" [options]="reasonTypeOptions" [(ngModel)]="reasonTypeFilter" />
+  }
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (tab === 'tenant' && !tenantSettings().length) {
+  <app-empty-state title="No tenant settings" message="Upsert a key/value setting for this tenant." actionLabel="Upsert setting" (action)="openUpsertTenant()" />
+} @else if (tab === 'branch' && !branchSettings().length) {
+  <app-empty-state title="No branch settings" message="Upsert a key/value setting for a branch." actionLabel="Upsert setting" (action)="openUpsertBranch()" />
+} @else if (tab === 'reasons' && !reasons().length) {
+  <app-empty-state title="No reason codes" message="Create return, adjustment, count, or void reasons." actionLabel="New reason" (action)="openCreateReason()" />
+} @else if (tab === 'audit' && !audits().length) {
+  <app-empty-state title="No audit entries" message="Audit events will appear here when recorded." />
+} @else if (tab === 'tenant') {
+  <app-table [columns]="settingColumns" [hasActions]="true" [page]="page()" [hasNext]="hasNext()" [totalCount]="totalCount()" (pageChange)="load($event)">
+    @for (row of tenantSettings(); track row.id) {
+      <tr>
+        <td class="primary">{{ row.settingKey }}</td>
+        <td>{{ row.settingValue || '—' }}</td>
+        <td><app-badge [tone]="row.isEncrypted ? 'warning' : 'success'">{{ row.isEncrypted ? 'Yes' : 'No' }}</app-badge></td>
+        <td class="actions"><app-button variant="ghost" size="sm" (clicked)="openUpsertTenant(row)">Edit</app-button></td>
+      </tr>
+    }
+  </app-table>
+} @else if (tab === 'branch') {
+  <app-table [columns]="branchSettingColumns" [hasActions]="true" [page]="page()" [hasNext]="hasNext()" [totalCount]="totalCount()" (pageChange)="load($event)">
+    @for (row of branchSettings(); track row.id) {
+      <tr>
+        <td>{{ branchCode(row.branchId) }}</td>
+        <td class="primary">{{ row.settingKey }}</td>
+        <td>{{ row.settingValue || '—' }}</td>
+        <td class="actions"><app-button variant="ghost" size="sm" (clicked)="openUpsertBranch(row)">Edit</app-button></td>
+      </tr>
+    }
+  </app-table>
+} @else if (tab === 'reasons') {
+  <app-table [columns]="reasonColumns" [hasActions]="true" [page]="page()" [hasNext]="hasNext()" [totalCount]="totalCount()" (pageChange)="load($event)">
+    @for (row of reasons(); track row.id) {
+      <tr>
+        <td>{{ row.reasonType }}</td>
+        <td class="primary">{{ row.code }}</td>
+        <td>{{ row.name }}</td>
+        <td><app-badge [tone]="row.isActive ? 'success' : 'warning'">{{ row.isActive ? 'Active' : 'Inactive' }}</app-badge></td>
+        <td class="actions"><app-button variant="ghost" size="sm" (clicked)="openEditReason(row)">Edit</app-button></td>
+      </tr>
+    }
+  </app-table>
+} @else {
+  <app-table [columns]="auditColumns" [page]="page()" [hasNext]="hasNext()" [totalCount]="totalCount()" (pageChange)="load($event)">
+    @for (row of audits(); track row.id) {
+      <tr>
+        <td>{{ row.createdAt | date: 'short' }}</td>
+        <td>
+          <div class="primary">{{ row.entityName }}</div>
+          <div class="muted">#{{ row.entityId || '—' }}</div>
+        </td>
+        <td>{{ row.action }}</td>
+        <td>{{ row.userId || '—' }}</td>
+        <td class="muted truncate">{{ row.newValues || row.oldValues || '—' }}</td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal
+  [open]="modalOpen()"
+  [title]="modalKind === 'reason' ? (editingReasonId ? 'Edit reason code' : 'New reason code') : 'Upsert setting'"
+  size="md"
+  (closed)="closeModal()"
+>
+  @if (modalKind === 'reason') {
+    <div class="form-grid">
+      <app-select label="Type" [options]="reasonTypeOptions.slice(1)" [(ngModel)]="formReasonType" [disabled]="editingReasonId != null" />
+      <app-input label="Code" [(ngModel)]="formReasonCode" [disabled]="editingReasonId != null" />
+      <app-input label="Name" [(ngModel)]="formReasonName" />
+      <app-input label="Description" [(ngModel)]="formReasonDescription" />
+      <label class="check"><input type="checkbox" [(ngModel)]="formReasonActive" /> Active</label>
+    </div>
+  } @else {
+    <div class="form-grid">
+      @if (modalKind === 'branch') {
+        <app-select label="Branch" [options]="branchOptions.slice(1)" [(ngModel)]="formBranchId" />
+      }
+      <app-input label="Setting key" [(ngModel)]="formKey" />
+      <app-input label="Setting value" [(ngModel)]="formValue" />
+      <label class="check"><input type="checkbox" [(ngModel)]="formEncrypted" /> Encrypted</label>
+    </div>
+  }
+  <div class="modal-actions">
+    <app-button variant="ghost" (clicked)="closeModal()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="save()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>

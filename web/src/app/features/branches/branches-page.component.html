@@ -1,0 +1,94 @@
+<app-page-header
+  title="Branches"
+  subtitle="Manage retail and warehouse branches for the tenant."
+>
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">New branch</app-button>
+</app-page-header>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="Code, name, city…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  <app-select label="Status" [options]="activeOptions" [(ngModel)]="activeFilter" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load()">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state
+    title="No branches"
+    message="Create a branch to scope warehouses, counters, and POS terminals."
+    actionLabel="New branch"
+    (action)="openCreate()"
+  />
+} @else {
+  <app-table [columns]="columns" [hasActions]="true" [loading]="loading()">
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>
+          <div class="primary">{{ row.name }}</div>
+          <div class="muted">{{ row.code }}</div>
+        </td>
+        <td>{{ row.city || '—' }}{{ row.province ? ', ' + row.province : '' }}</td>
+        <td>{{ row.branchType || '—' }}</td>
+        <td>
+          <div>{{ row.phone || '—' }}</div>
+          <div class="muted">{{ row.email || '—' }}</div>
+        </td>
+        <td>
+          <app-badge [tone]="row.isActive ? 'success' : 'warning'">
+            {{ row.isActive ? 'Active' : 'Inactive' }}
+          </app-badge>
+        </td>
+        <td class="actions">
+          <app-button variant="ghost" size="sm" (clicked)="openEdit(row)">Edit</app-button>
+          @if (row.isActive) {
+            <app-button variant="ghost" size="sm" (clicked)="deactivate(row)">Deactivate</app-button>
+          }
+        </td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal
+  [open]="modalOpen()"
+  [title]="editingId == null ? 'New branch' : 'Edit branch'"
+  size="md"
+  (closed)="closeModal()"
+>
+  <div class="form-grid">
+    <app-input label="Code" [(ngModel)]="formCode" [disabled]="editingId != null" />
+    <app-input label="Name" [(ngModel)]="formName" />
+    <app-input label="Type" [(ngModel)]="formBranchType" />
+    <app-input label="City" [(ngModel)]="formCity" />
+    <app-input label="Province" [(ngModel)]="formProvince" />
+    <app-input label="Phone" [(ngModel)]="formPhone" />
+    <app-input label="Email" [(ngModel)]="formEmail" />
+    <app-input label="Address" [(ngModel)]="formAddress" />
+    @if (editingId != null) {
+      <label class="check">
+        <input type="checkbox" [(ngModel)]="formActive" />
+        Active
+      </label>
+    }
+  </div>
+  <div class="modal-actions">
+    <app-button variant="ghost" (clicked)="closeModal()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="save()" [loading]="saving()">Save</app-button>
+  </div>
+</app-modal>

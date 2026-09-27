@@ -87,7 +87,193 @@ export interface BranchDto {
   name: string;
   branchType?: string | null;
   city?: string | null;
+  province?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
   isActive: boolean;
+}
+
+export interface CreateBranchRequest {
+  code: string;
+  name: string;
+  branchType?: string | null;
+  city?: string | null;
+  province?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+}
+
+export interface UpdateBranchRequest {
+  name: string;
+  branchType?: string | null;
+  city?: string | null;
+  province?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  isActive: boolean;
+}
+
+export interface UserAdminDto {
+  id: number;
+  tenantId: number;
+  username: string;
+  email?: string | null;
+  fullName: string;
+  phone?: string | null;
+  employeeCode?: string | null;
+  isActive: boolean;
+  lastLoginAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  roleIds: number[];
+  roleNames: string[];
+  branchIds: number[];
+}
+
+export interface UserAdminSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  isActive?: boolean | null;
+}
+
+export interface CreateUserRequest {
+  username: string;
+  password: string;
+  fullName: string;
+  email?: string | null;
+  phone?: string | null;
+  employeeCode?: string | null;
+  isActive: boolean;
+  roleIds?: number[];
+  branchIds?: number[];
+}
+
+export interface UpdateUserRequest {
+  fullName: string;
+  email?: string | null;
+  phone?: string | null;
+  employeeCode?: string | null;
+  isActive: boolean;
+  password?: string | null;
+}
+
+export interface RoleDto {
+  id: number;
+  tenantId: number;
+  name: string;
+  description?: string | null;
+  isSystemRole: boolean;
+  permissionIds: number[];
+  permissionCodes: string[];
+}
+
+export interface RoleSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  isSystemRole?: boolean | null;
+}
+
+export interface CreateRoleRequest {
+  name: string;
+  description?: string | null;
+  permissionIds?: number[];
+}
+
+export interface UpdateRoleRequest {
+  name: string;
+  description?: string | null;
+}
+
+export interface PermissionDto {
+  id: number;
+  code: string;
+  name: string;
+  module: string;
+  description?: string | null;
+}
+
+export interface TenantSettingDto {
+  id: number;
+  tenantId: number;
+  settingKey: string;
+  settingValue?: string | null;
+  isEncrypted: boolean;
+}
+
+export interface BranchSettingDto {
+  id: number;
+  branchId: number;
+  settingKey: string;
+  settingValue?: string | null;
+  isEncrypted: boolean;
+}
+
+export interface UpsertSettingRequest {
+  settingKey: string;
+  settingValue?: string | null;
+  isEncrypted: boolean;
+}
+
+export interface ReasonCodeDto {
+  id: number;
+  tenantId: number;
+  reasonType: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+}
+
+export interface ReasonCodeSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  reasonType?: string | null;
+  isActive?: boolean | null;
+}
+
+export interface CreateReasonCodeRequest {
+  reasonType: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+}
+
+export interface UpdateReasonCodeRequest {
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+}
+
+export interface AuditLogDto {
+  id: number;
+  tenantId?: number | null;
+  branchId?: number | null;
+  userId?: number | null;
+  entityName: string;
+  entityId?: number | null;
+  action: string;
+  oldValues?: string | null;
+  newValues?: string | null;
+  ipAddress?: string | null;
+  terminalId?: number | null;
+  createdAt: string;
+}
+
+export interface AuditLogSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  entityName?: string | null;
+  action?: string | null;
+  userId?: number | null;
+  branchId?: number | null;
 }
 
 export interface CounterDto {
