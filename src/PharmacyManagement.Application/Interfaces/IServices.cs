@@ -9,6 +9,7 @@ using PharmacyManagement.Application.DTOs.Inventory;
 using PharmacyManagement.Application.DTOs.Organization;
 using PharmacyManagement.Application.DTOs.Prescriptions;
 using PharmacyManagement.Application.DTOs.Products;
+using PharmacyManagement.Application.DTOs.Procurement;
 using PharmacyManagement.Application.DTOs.Purchasing;
 using PharmacyManagement.Application.DTOs.Sales;
 
@@ -94,6 +95,23 @@ public interface ISupplierService
     Task<SupplierDto> CreateAsync(CreateSupplierRequest request, CancellationToken ct = default);
     Task<SupplierDto> UpdateAsync(long id, UpdateSupplierRequest request, CancellationToken ct = default);
     Task DeactivateAsync(long id, CancellationToken ct = default);
+    Task<PagedResult<SupplierLedgerEntryDto>> GetLedgerAsync(long supplierId, SupplierLedgerQuery query, CancellationToken ct = default);
+}
+
+public interface ISupplierPaymentService
+{
+    Task<PagedResult<SupplierPaymentDto>> SearchAsync(SupplierPaymentQuery query, CancellationToken ct = default);
+    Task<SupplierPaymentDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<SupplierPaymentDto> CreateAsync(CreateSupplierPaymentRequest request, CancellationToken ct = default);
+}
+
+public interface ISupplierReturnService
+{
+    Task<PagedResult<SupplierReturnDto>> SearchAsync(SupplierReturnQuery query, CancellationToken ct = default);
+    Task<SupplierReturnDto?> GetByIdAsync(long id, CancellationToken ct = default);
+    Task<SupplierReturnDto> CreateDraftAsync(CreateSupplierReturnRequest request, CancellationToken ct = default);
+    Task<SupplierReturnDto> PostAsync(long id, CancellationToken ct = default);
+    Task<SupplierReturnDto> CancelAsync(long id, CancellationToken ct = default);
 }
 
 public interface IPurchaseOrderService

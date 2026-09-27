@@ -330,3 +330,136 @@ export interface ExpenseSearchParams {
   fromDate?: string | null;
   toDate?: string | null;
 }
+
+export interface SupplierDto {
+  id: number;
+  tenantId: number;
+  code: string;
+  name: string;
+  companyName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  creditLimit: number;
+  paymentTermsDays: number;
+  isActive: boolean;
+}
+
+export interface SupplierPaymentDto {
+  id: number;
+  supplierId: number;
+  supplierCode?: string | null;
+  supplierName?: string | null;
+  branchId: number;
+  branchName?: string | null;
+  paymentMethodId: number;
+  paymentMethodCode?: string | null;
+  paymentMethodName?: string | null;
+  paymentMethodType?: string | null;
+  amount: number;
+  referenceNumber?: string | null;
+  paymentDate: string;
+  remarks?: string | null;
+  paidBy?: number | null;
+}
+
+export interface CreateSupplierPaymentRequest {
+  supplierId: number;
+  branchId: number;
+  paymentMethodId: number;
+  amount: number;
+  referenceNumber?: string | null;
+  paymentDate: string;
+  remarks?: string | null;
+  terminalId?: number | null;
+}
+
+export interface SupplierPaymentSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  supplierId?: number | null;
+  branchId?: number | null;
+  paymentMethodId?: number | null;
+  fromDate?: string | null;
+  toDate?: string | null;
+}
+
+export interface SupplierReturnLineDto {
+  id: number;
+  productId: number;
+  batchId: number;
+  goodsReceiptLineId?: number | null;
+  productUnitId: number;
+  quantity: number;
+  unitCost: number;
+  lineAmount: number;
+}
+
+export interface SupplierReturnDto {
+  id: number;
+  supplierId: number;
+  supplierCode?: string | null;
+  supplierName?: string | null;
+  branchId: number;
+  branchName?: string | null;
+  warehouseId: number;
+  warehouseName?: string | null;
+  returnNumber: string;
+  returnDate: string;
+  reason?: string | null;
+  status: string;
+  totalAmount: number;
+  lines: SupplierReturnLineDto[];
+}
+
+export interface CreateSupplierReturnLineRequest {
+  productId: number;
+  batchId: number;
+  productUnitId: number;
+  quantity: number;
+  unitCost: number;
+  goodsReceiptLineId?: number | null;
+  warehouseLocationId?: number | null;
+}
+
+export interface CreateSupplierReturnRequest {
+  supplierId: number;
+  branchId: number;
+  warehouseId: number;
+  returnDate?: string | null;
+  reason?: string | null;
+  lines: CreateSupplierReturnLineRequest[];
+}
+
+export interface SupplierReturnSearchParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  supplierId?: number | null;
+  branchId?: number | null;
+  warehouseId?: number | null;
+  status?: string | null;
+}
+
+export interface SupplierLedgerEntryDto {
+  id: number;
+  supplierId: number;
+  branchId: number;
+  transactionDate: string;
+  transactionType: string;
+  referenceType?: string | null;
+  referenceId?: number | null;
+  debit: number;
+  credit: number;
+  sequenceNo: number;
+  remarks?: string | null;
+  runningBalance: number;
+}
+
+export interface SupplierLedgerSearchParams {
+  page?: number;
+  pageSize?: number;
+  branchId?: number | null;
+  fromDate?: string | null;
+  toDate?: string | null;
+}

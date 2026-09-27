@@ -13,6 +13,8 @@ public static class PermissionCodes
     public const string InvTransfer = "INV.TRANSFER";
     public const string ProcPo = "PROC.PO";
     public const string ProcGrn = "PROC.GRN";
+    public const string ProcSupplierPay = "PROC.SUPPLIER_PAY";
+    public const string ProcSupplierReturn = "PROC.SUPPLIER_RETURN";
     public const string PosSale = "POS.SALE";
     public const string PosHold = "POS.HOLD";
     public const string PosReturn = "POS.RETURN";
@@ -39,6 +41,7 @@ public static class DocumentTypes
     public const string Prescription = "PRESCRIPTION";
     public const string ControlledRegister = "CTRL_REGISTER";
     public const string Expense = "EXPENSE";
+    public const string SupplierReturn = "SUPPLIER_RETURN";
 }
 
 public static class MovementTypes
@@ -51,6 +54,8 @@ public static class MovementTypes
     public const string Sale = "Sale";
     public const string Return = "Return";
     public const string Void = "Void";
+    /// <summary>No CHECK constraint on InventoryMovements.MovementType — SupplierReturn is allowed.</summary>
+    public const string SupplierReturn = "SupplierReturn";
 }
 
 public static class BatchStatuses

@@ -11,6 +11,8 @@ import {
   CreateExpenseCategoryRequest,
   CreateExpenseRequest,
   CreateSaleRequest,
+  CreateSupplierPaymentRequest,
+  CreateSupplierReturnRequest,
   ExpenseCategoryDto,
   ExpenseDto,
   ExpenseSearchParams,
@@ -22,6 +24,13 @@ import {
   ProductDto,
   SaleDto,
   SaleReceiptDto,
+  SupplierDto,
+  SupplierLedgerEntryDto,
+  SupplierLedgerSearchParams,
+  SupplierPaymentDto,
+  SupplierPaymentSearchParams,
+  SupplierReturnDto,
+  SupplierReturnSearchParams,
   UpdateExpenseCategoryRequest,
   WarehouseDto,
 } from '../models/api.models';
@@ -181,6 +190,106 @@ export class PharmacyApiService {
   ): Observable<ExpenseCategoryDto> {
     return this.http
       .put<ApiResponse<ExpenseCategoryDto>>(`${this.base}/api/v1/expense-categories/${id}`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchSuppliers(search = '', pageSize = 100): Observable<SupplierDto[]> {
+    let params = new HttpParams().set('pageSize', pageSize);
+    if (search.trim()) params = params.set('search', search.trim());
+    return this.http
+      .get<ApiResponse<PagedResult<SupplierDto>>>(`${this.base}/api/v1/suppliers`, { params })
+      .pipe(map((r) => this.unwrap(r).items));
+  }
+
+  getSupplier(id: number): Observable<SupplierDto> {
+    return this.http
+      .get<ApiResponse<SupplierDto>>(`${this.base}/api/v1/suppliers/${id}`)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getSupplierLedger(
+    supplierId: number,
+    params: SupplierLedgerSearchParams = {},
+  ): Observable<PagedResult<SupplierLedgerEntryDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    return this.http
+      .get<ApiResponse<PagedResult<SupplierLedgerEntryDto>>>(
+        `${this.base}/api/v1/suppliers/${supplierId}/ledger`,
+        { params: httpParams },
+      )
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchSupplierPayments(
+    params: SupplierPaymentSearchParams = {},
+  ): Observable<PagedResult<SupplierPaymentDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.supplierId != null) httpParams = httpParams.set('supplierId', params.supplierId);
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.paymentMethodId != null)
+      httpParams = httpParams.set('paymentMethodId', params.paymentMethodId);
+    if (params.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    return this.http
+      .get<ApiResponse<PagedResult<SupplierPaymentDto>>>(`${this.base}/api/v1/supplier-payments`, {
+        params: httpParams,
+      })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createSupplierPayment(request: CreateSupplierPaymentRequest): Observable<SupplierPaymentDto> {
+    return this.http
+      .post<ApiResponse<SupplierPaymentDto>>(`${this.base}/api/v1/supplier-payments`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  searchSupplierReturns(
+    params: SupplierReturnSearchParams = {},
+  ): Observable<PagedResult<SupplierReturnDto>> {
+    let httpParams = new HttpParams()
+      .set('page', params.page ?? 1)
+      .set('pageSize', params.pageSize ?? 20);
+    if (params.search?.trim()) httpParams = httpParams.set('search', params.search.trim());
+    if (params.supplierId != null) httpParams = httpParams.set('supplierId', params.supplierId);
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.warehouseId != null) httpParams = httpParams.set('warehouseId', params.warehouseId);
+    if (params.status) httpParams = httpParams.set('status', params.status);
+    return this.http
+      .get<ApiResponse<PagedResult<SupplierReturnDto>>>(`${this.base}/api/v1/supplier-returns`, {
+        params: httpParams,
+      })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getSupplierReturn(id: number): Observable<SupplierReturnDto> {
+    return this.http
+      .get<ApiResponse<SupplierReturnDto>>(`${this.base}/api/v1/supplier-returns/${id}`)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  createSupplierReturn(request: CreateSupplierReturnRequest): Observable<SupplierReturnDto> {
+    return this.http
+      .post<ApiResponse<SupplierReturnDto>>(`${this.base}/api/v1/supplier-returns`, request)
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  postSupplierReturn(id: number): Observable<SupplierReturnDto> {
+    return this.http
+      .post<ApiResponse<SupplierReturnDto>>(`${this.base}/api/v1/supplier-returns/${id}/post`, {})
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  cancelSupplierReturn(id: number): Observable<SupplierReturnDto> {
+    return this.http
+      .post<ApiResponse<SupplierReturnDto>>(`${this.base}/api/v1/supplier-returns/${id}/cancel`, {})
       .pipe(map((r) => this.unwrap(r)));
   }
 

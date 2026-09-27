@@ -1,0 +1,48 @@
+<app-page-header title="Suppliers" subtitle="Supplier master, payments, and ledger access.">
+  <a routerLink="/supplier-payments" class="header-link">Payments</a>
+  <a routerLink="/purchase-returns" class="header-link">Purchase returns</a>
+</app-page-header>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="Code or name…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && load()"
+  />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="load()" [loading]="loading()">Search</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load()">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state title="No suppliers" message="No suppliers match the current search." />
+} @else {
+  <app-table [columns]="columns" [hasActions]="false" [loading]="loading()">
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>{{ row.code }}</td>
+        <td>{{ row.name }}</td>
+        <td>{{ row.phone || '—' }}</td>
+        <td>{{ row.paymentTermsDays }}</td>
+        <td>
+          <app-badge [tone]="row.isActive ? 'success' : 'danger'">
+            {{ row.isActive ? 'Active' : 'Inactive' }}
+          </app-badge>
+        </td>
+        <td>
+          <a [routerLink]="['/suppliers', row.id, 'ledger']" class="row-link">Ledger</a>
+        </td>
+      </tr>
+    }
+  </app-table>
+}

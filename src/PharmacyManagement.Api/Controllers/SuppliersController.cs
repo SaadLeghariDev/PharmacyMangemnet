@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PharmacyManagement.Application.Common;
+using PharmacyManagement.Application.DTOs.Procurement;
 using PharmacyManagement.Application.DTOs.Purchasing;
 using PharmacyManagement.Application.Interfaces;
 using PharmacyManagement.Domain.Constants;
@@ -61,5 +62,14 @@ public sealed class SuppliersController(
     {
         await suppliers.DeactivateAsync(id, ct);
         return Ok(ApiResponse.Ok("Supplier deactivated"));
+    }
+
+    [HttpGet("{id:long}/ledger")]
+    [Authorize(Policy = PermissionCodes.ProcSupplierPay)]
+    public async Task<ActionResult<ApiResponse<PagedResult<SupplierLedgerEntryDto>>>> Ledger(
+        long id, [FromQuery] SupplierLedgerQuery query, CancellationToken ct)
+    {
+        var result = await suppliers.GetLedgerAsync(id, query, ct);
+        return Ok(ApiResponse<PagedResult<SupplierLedgerEntryDto>>.Ok(result));
     }
 }

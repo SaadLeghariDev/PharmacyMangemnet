@@ -38,7 +38,7 @@ If you cloned under `F:\Pharmacymanagemnt` (or similar), point the API at Expres
 
 `Server=DESKTOP-H9TF8EF\SQLEXPRESS;Database=PharmacyManagement;Trusted_Connection=True;TrustServerCertificate=True;`
 
-## API (Phase 4+)
+## API (Phase 5+)
 
 ```bash
 dotnet restore
@@ -60,14 +60,17 @@ Seed user `admin` — in **Development**, password is `Admin@12345` (`AuthBootst
 | Module | Base route | Permission |
 |--------|------------|------------|
 | Auth / Org / Products | `/api/v1/...` | ORG.*, PROD.* |
-| Purchasing / GRN | `/api/v1/purchase-orders`, `/api/v1/goods-receipts` | PROC.* |
+| Purchasing / GRN | `/api/v1/purchase-orders`, `/api/v1/goods-receipts` | PROC.PO, PROC.GRN |
+| **Supplier payments** | `/api/v1/supplier-payments` | **PROC.SUPPLIER_PAY** |
+| **Supplier returns** | `/api/v1/supplier-returns` | **PROC.SUPPLIER_RETURN** |
+| **Supplier ledger** | `/api/v1/suppliers/{id}/ledger` | **PROC.SUPPLIER_PAY** |
 | Inventory | `/api/v1/inventory`, stock transfers/adjustments/counts | INV.* |
 | Sales / Held / Returns | `/api/v1/sales`, `/api/v1/held-sales`, `/api/v1/sale-returns` | POS.* |
 | Cash / Customers | `/api/v1/cash-shifts`, `/api/v1/customers` | FIN.CASH, CUST.* |
-| **Expenses** | `/api/v1/expenses`, `/api/v1/expense-categories` | **FIN.EXPENSE** |
+| Expenses | `/api/v1/expenses`, `/api/v1/expense-categories` | FIN.EXPENSE |
 | Rx / Controlled / Fiscal | `/api/v1/prescriptions`, `/api/v1/controlled-registers`, `/api/v1/fiscal/documents` | RX.*, CTRL.*, FISCAL.* |
 
-Expense numbers allocate via `NumberSequences` (`EXPENSE` / `EXP-`, branch-scoped). Cash expenses post `CashTransactions` with `TransactionType=Expense` on the open shift for the requested terminal (positive amount, same convention as PayOut).
+Supplier return numbers allocate via `NumberSequences` (`SUPPLIER_RETURN` / `SR-`, branch-scoped). Cash supplier payments post `CashTransactions` with `TransactionType=PayOut` on the open shift. Posted returns decrement batch location qty and write `InventoryMovements` with `MovementType=SupplierReturn`.
 
 ## Angular UI
 
@@ -79,4 +82,4 @@ npm start
 
 - App: http://127.0.0.1:43123  
 - Talks to API at `http://127.0.0.1:5329` (`web/src/environments/environment.ts`)  
-- Working slices: **Login**, **app shell**, **POS / Sales**, **Expenses** (list/filters, create, categories CRUD)
+- Working slices: **Login**, **app shell**, **POS / Sales**, **Expenses**, **Suppliers** (+ ledger), **Supplier payments**, **Purchase returns**

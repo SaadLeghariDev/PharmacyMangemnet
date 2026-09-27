@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PharmacyManagement.Application.Common;
+using PharmacyManagement.Application.DTOs.Procurement;
 using PharmacyManagement.Application.DTOs.Purchasing;
 using PharmacyManagement.Application.Exceptions;
 using PharmacyManagement.Application.Interfaces;
@@ -104,6 +105,58 @@ public sealed class SupplierService(PharmacyManagementDbContext db, ICurrentUser
             ?? throw new NotFoundException($"Supplier {id} not found.");
         entity.IsActive = false;
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<PagedResult<SupplierLedgerEntryDto>> GetLedgerAsync(
+        long supplierId, SupplierLedgerQuery query, CancellationToken ct = default)
+    {
+        var tenantId = RequireTenantId();
+        if (!await db.Suppliers.AnyAsync(s => s.Id == supplierId && s.TenantId == tenantId, ct))
+            throw new NotFoundException($"Supplier {supplierId} not found.");
+
+        var q = db.SupplierLedgers.AsNoTracking().Where(l => l.SupplierId == supplierId);
+        if (query.BranchId is long branchId) q = q.Where(l => l.BranchId == branchId);
+        if (query.FromDate is DateTime from) q = q.Where(l => l.TransactionDate >= from);
+        if (query.ToDate is DateTime to) q = q.Where(l => l.TransactionDate <= to);
+
+        // Ascending for running balance; page over that ordered set.
+        var ordered = await q.OrderBy(l => l.SequenceNo).ThenBy(l => l.Id).ToListAsync(ct);
+        decimal running = 0;
+        var withBalance = ordered.Select(l =>
+        {
+            running = Math.Round(running + l.Debit - l.Credit, 4);
+            return new SupplierLedgerEntryDto
+            {
+                Id = l.Id,
+                SupplierId = l.SupplierId,
+                BranchId = l.BranchId,
+                TransactionDate = l.TransactionDate,
+                TransactionType = l.TransactionType,
+                ReferenceType = l.ReferenceType,
+                ReferenceId = l.ReferenceId,
+                Debit = l.Debit,
+                Credit = l.Credit,
+                SequenceNo = l.SequenceNo,
+                Remarks = l.Remarks,
+                RunningBalance = running
+            };
+        }).ToList();
+
+        // Newest first for display (matches customer ledger UX).
+        withBalance.Reverse();
+        var total = withBalance.Count;
+        var pageItems = withBalance
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .ToList();
+
+        return new PagedResult<SupplierLedgerEntryDto>
+        {
+            Items = pageItems,
+            Page = query.Page,
+            PageSize = query.PageSize,
+            TotalCount = total
+        };
     }
 
     private static SupplierDto Map(Supplier s) => new()

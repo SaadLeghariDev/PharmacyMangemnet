@@ -39,6 +39,8 @@ public static class PermissionPolicies
             Add(PermissionCodes.InvTransfer);
             Add(PermissionCodes.ProcPo);
             Add(PermissionCodes.ProcGrn);
+            Add(PermissionCodes.ProcSupplierPay);
+            Add(PermissionCodes.ProcSupplierReturn);
             Add(PermissionCodes.PosSale);
             Add(PermissionCodes.PosHold);
             Add(PermissionCodes.PosReturn);

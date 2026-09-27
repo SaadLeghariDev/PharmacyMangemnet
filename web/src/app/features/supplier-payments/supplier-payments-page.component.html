@@ -1,0 +1,126 @@
+<app-page-header
+  title="Supplier payments"
+  subtitle="Record payments to suppliers and keep the supplier ledger current."
+>
+  <a routerLink="/suppliers" class="header-link">Suppliers</a>
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">Record payment</app-button>
+</app-page-header>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="Supplier, reference, remarks…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  <app-input label="From" type="date" [(ngModel)]="fromDate" />
+  <app-input label="To" type="date" [(ngModel)]="toDate" />
+  <app-select label="Branch" [options]="branchOptions()" [(ngModel)]="branchFilter" />
+  <app-select label="Supplier" [options]="supplierOptions()" [(ngModel)]="supplierFilter" />
+  <app-select label="Payment" [options]="paymentOptions" [(ngModel)]="paymentFilter" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state
+    title="No supplier payments"
+    message="Record a payment or clear filters to see results."
+    actionLabel="Record payment"
+    (action)="openCreate()"
+  />
+} @else {
+  <app-table
+    [columns]="columns"
+    [hasActions]="false"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>{{ row.paymentDate | date: 'mediumDate' }}</td>
+        <td>
+          <a [routerLink]="['/suppliers', row.supplierId, 'ledger']" class="row-link">
+            {{ row.supplierName || row.supplierCode || row.supplierId }}
+          </a>
+        </td>
+        <td>{{ row.branchName || '—' }}</td>
+        <td>{{ row.paymentMethodName || row.paymentMethodCode || '—' }}</td>
+        <td>{{ row.referenceNumber || '—' }}</td>
+        <td class="num">{{ row.amount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+        <td>{{ row.remarks || '—' }}</td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal [open]="createOpen()" title="Record supplier payment" size="md" (closed)="closeCreate()">
+  <div class="form-grid">
+    <app-select
+      label="Supplier"
+      [required]="true"
+      [options]="createSupplierOptions()"
+      [(ngModel)]="createSupplierId"
+      [error]="createErrors['supplier'] || ''"
+    />
+    <app-select
+      label="Branch"
+      [required]="true"
+      [options]="createBranchOptions()"
+      [(ngModel)]="createBranchId"
+      [error]="createErrors['branch'] || ''"
+    />
+    <app-input
+      label="Payment date"
+      type="date"
+      [required]="true"
+      [(ngModel)]="createDate"
+      [error]="createErrors['date'] || ''"
+    />
+    <app-input
+      label="Amount"
+      type="number"
+      [required]="true"
+      [min]="0"
+      step="0.01"
+      [(ngModel)]="createAmount"
+      [error]="createErrors['amount'] || ''"
+    />
+    <app-select
+      label="Payment method"
+      [required]="true"
+      [options]="createPaymentOptions"
+      [(ngModel)]="createPaymentMethodId"
+      [error]="createErrors['payment'] || ''"
+    />
+    @if (isCashSelected) {
+      <app-select
+        label="Terminal"
+        [required]="true"
+        [options]="terminalOptions()"
+        [(ngModel)]="createTerminalId"
+        [error]="createErrors['terminal'] || ''"
+      />
+    }
+    <app-input label="Reference" placeholder="Cheque / transfer ref" [(ngModel)]="createReference" />
+    <app-input label="Remarks" placeholder="Optional note" [(ngModel)]="createRemarks" />
+  </div>
+  <div modal-footer>
+    <app-button variant="ghost" (clicked)="closeCreate()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="submitCreate()" [loading]="saving()">Save payment</app-button>
+  </div>
+</app-modal>

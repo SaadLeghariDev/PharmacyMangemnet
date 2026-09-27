@@ -1,0 +1,135 @@
+<app-page-header
+  title="Purchase returns"
+  subtitle="Draft supplier returns, post stock outs, and keep the supplier ledger aligned."
+>
+  <app-button variant="primary" size="sm" (clicked)="openCreate()">New draft return</app-button>
+</app-page-header>
+
+<div class="toolbar">
+  <app-input
+    label="Search"
+    placeholder="Return number, supplier, reason…"
+    [(ngModel)]="search"
+    (keydown)="$event.key === 'Enter' && applyFilters()"
+  />
+  <app-select label="Status" [options]="statusOptions" [(ngModel)]="statusFilter" />
+  <app-select label="Branch" [options]="branchOptions()" [(ngModel)]="branchFilter" />
+  <app-select label="Supplier" [options]="supplierOptions()" [(ngModel)]="supplierFilter" />
+  <div class="toolbar-actions">
+    <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>
+    <app-button variant="ghost" (clicked)="clearFilters()" [disabled]="loading()">Clear</app-button>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="error-banner" role="alert">
+    <span>{{ error() }}</span>
+    <app-button variant="secondary" size="sm" (clicked)="load(page())">Retry</app-button>
+  </div>
+}
+
+@if (loading()) {
+  <app-loading-state variant="table" />
+} @else if (!rows().length) {
+  <app-empty-state
+    title="No purchase returns"
+    message="Create a draft return to send stock back to a supplier."
+    actionLabel="New draft return"
+    (action)="openCreate()"
+  />
+} @else {
+  <app-table
+    [columns]="columns"
+    [hasActions]="false"
+    [page]="page()"
+    [hasNext]="hasNext()"
+    [totalCount]="totalCount()"
+    [loading]="loading()"
+    (pageChange)="load($event)"
+  >
+    @for (row of rows(); track row.id) {
+      <tr>
+        <td>{{ row.returnNumber }}</td>
+        <td>{{ row.returnDate | date: 'mediumDate' }}</td>
+        <td>{{ row.supplierName || row.supplierCode || '—' }}</td>
+        <td>{{ row.warehouseName || '—' }}</td>
+        <td><app-badge [tone]="statusTone(row.status)">{{ row.status }}</app-badge></td>
+        <td class="num">{{ row.totalAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+        <td class="actions">
+          @if (row.status === 'Draft') {
+            <app-button variant="primary" size="sm" (clicked)="askPost(row)">Post</app-button>
+            <app-button variant="ghost" size="sm" (clicked)="askCancel(row)">Cancel</app-button>
+          } @else {
+            <span class="muted">—</span>
+          }
+        </td>
+      </tr>
+    }
+  </app-table>
+}
+
+<app-modal [open]="createOpen()" title="Draft purchase return" size="lg" (closed)="closeCreate()">
+  <div class="form-grid">
+    <app-select
+      label="Supplier"
+      [required]="true"
+      [options]="createSupplierOptions()"
+      [(ngModel)]="createSupplierId"
+      [error]="createErrors['supplier'] || ''"
+    />
+    <app-select
+      label="Branch"
+      [required]="true"
+      [options]="createBranchOptions()"
+      [(ngModel)]="createBranchId"
+      (ngModelChange)="syncWarehouseDefault()"
+      [error]="createErrors['branch'] || ''"
+    />
+    <app-select
+      label="Warehouse"
+      [required]="true"
+      [options]="createWarehouseOptions()"
+      [(ngModel)]="createWarehouseId"
+      [error]="createErrors['warehouse'] || ''"
+    />
+    <app-input label="Reason" placeholder="Optional" [(ngModel)]="createReason" />
+  </div>
+
+  <div class="lines">
+    <div class="lines-head">
+      <h3>Lines</h3>
+      <app-button variant="secondary" size="sm" (clicked)="addLine()">Add line</app-button>
+    </div>
+    @for (line of createLines; track $index; let i = $index) {
+      <div class="line-row">
+        <app-input label="Product ID" type="number" [(ngModel)]="line.productId" />
+        <app-input label="Batch ID" type="number" [(ngModel)]="line.batchId" />
+        <app-input label="Unit ID" type="number" [(ngModel)]="line.productUnitId" />
+        <app-input label="Qty" type="number" step="0.001" [(ngModel)]="line.quantity" />
+        <app-input label="Unit cost" type="number" step="0.01" [(ngModel)]="line.unitCost" />
+        <app-button variant="ghost" size="sm" (clicked)="removeLine(i)" [disabled]="createLines.length <= 1"
+          >Remove</app-button
+        >
+        @if (createErrors['line' + i]) {
+          <p class="line-error">{{ createErrors['line' + i] }}</p>
+        }
+      </div>
+    }
+  </div>
+
+  <div modal-footer>
+    <app-button variant="ghost" (clicked)="closeCreate()" [disabled]="saving()">Cancel</app-button>
+    <app-button variant="primary" (clicked)="submitCreate()" [loading]="saving()">Save draft</app-button>
+  </div>
+</app-modal>
+
+<app-confirm-dialog
+  [open]="confirmOpen()"
+  [title]="confirmTitle"
+  [message]="confirmMessage"
+  [danger]="confirmDanger"
+  [busy]="confirmBusy()"
+  confirmLabel="Confirm"
+  (confirmed)="onConfirm()"
+  (cancelled)="closeConfirm()"
+/>

@@ -59,6 +59,8 @@ INSERT INTO dbo.Permissions (Code, Name, Module, Description) VALUES
  (N'INV.TRANSFER', N'Transfer Stock', N'Inventory', N'Inter-warehouse transfers'),
  (N'PROC.PO', N'Purchase Orders', N'Procurement', N'Create and approve POs'),
  (N'PROC.GRN', N'Goods Receipts', N'Procurement', N'Receive goods against POs'),
+ (N'PROC.SUPPLIER_PAY', N'Supplier Payments', N'Procurement', N'Record supplier payments and view supplier ledger'),
+ (N'PROC.SUPPLIER_RETURN', N'Supplier Returns', N'Procurement', N'Draft, post, and cancel supplier returns'),
  (N'POS.SALE', N'POS Sale', N'POS', N'Create sales invoices'),
  (N'POS.RETURN', N'POS Return', N'POS', N'Process sale returns'),
  (N'POS.HOLD', N'Hold Sales', N'POS', N'Hold and resume carts'),
@@ -91,6 +93,14 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'FISCAL.SUBMIT')
 IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'FIN.EXPENSE')
     INSERT INTO dbo.Permissions (Code, Name, Module, Description)
     VALUES (N'FIN.EXPENSE', N'Manage Expenses', N'Finance', N'Create and list expenses and categories');
+
+/* Idempotent add for Phase 5 supplier AR permissions */
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'PROC.SUPPLIER_PAY')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'PROC.SUPPLIER_PAY', N'Supplier Payments', N'Procurement', N'Record supplier payments and view supplier ledger');
+IF NOT EXISTS (SELECT 1 FROM dbo.Permissions WHERE Code = N'PROC.SUPPLIER_RETURN')
+    INSERT INTO dbo.Permissions (Code, Name, Module, Description)
+    VALUES (N'PROC.SUPPLIER_RETURN', N'Supplier Returns', N'Procurement', N'Draft, post, and cancel supplier returns');
 GO
 
 /* Minimal demo org for tests */
@@ -207,6 +217,10 @@ IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND 
 IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND DocumentType = N'EXPENSE' AND BranchId = @BranchId AND TerminalId IS NULL)
     INSERT INTO dbo.NumberSequences (TenantId, BranchId, TerminalId, DocumentType, Prefix, CurrentNumber, NumberLength, ResetPeriod)
     VALUES (@TenantId, @BranchId, NULL, N'EXPENSE', N'EXP-', 0, 6, N'Never');
+
+IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WHERE TenantId = @TenantId AND DocumentType = N'SUPPLIER_RETURN' AND BranchId = @BranchId AND TerminalId IS NULL)
+    INSERT INTO dbo.NumberSequences (TenantId, BranchId, TerminalId, DocumentType, Prefix, CurrentNumber, NumberLength, ResetPeriod)
+    VALUES (@TenantId, @BranchId, NULL, N'SUPPLIER_RETURN', N'SR-', 0, 6, N'Never');
 
 PRINT N'Seed data applied.';
 GO
