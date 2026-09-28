@@ -6,7 +6,7 @@
       "launchUrl": "scalar",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ConnectionStrings__PharmacyManagement": "Server=DESKTOP-H9TF8EF\\SQLEXPRESS;Database=PharmacyManagement;Trusted_Connection=True;TrustServerCertificate=True;"
+        "ConnectionStrings__PharmacyManagement": "Server=db70451.public.databaseasp.net; Database=db70451; User Id=db70451; Password=8a=Z_Sw4H3@b; Encrypt=False; MultipleActiveResultSets=True;"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:5001;http://127.0.0.1:5000"
@@ -18,7 +18,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "UseLocalExpress": "true",
-        "ConnectionStrings__PharmacyManagement": "Server=DESKTOP-H9TF8EF\\SQLEXPRESS;Database=PharmacyManagement;Trusted_Connection=True;TrustServerCertificate=True;"
+        "ConnectionStrings__PharmacyManagement": "Server=db70451.public.databaseasp.net; Database=db70451; User Id=db70451; Password=8a=Z_Sw4H3@b; Encrypt=False; MultipleActiveResultSets=True;"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://127.0.0.1:5288"
@@ -29,7 +29,7 @@
       "launchUrl": "scalar",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ConnectionStrings__PharmacyManagement": "Server=localhost,14333;Database=PharmacyManagement;User Id=sa;Password=Your_strong_Password123;TrustServerCertificate=True;"
+        "ConnectionStrings__PharmacyManagement": "Server=db70451.public.databaseasp.net; Database=db70451; User Id=db70451; Password=8a=Z_Sw4H3@b; Encrypt=False; MultipleActiveResultSets=True;"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:7288;http://127.0.0.1:5288"
@@ -41,7 +41,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "UseLocalExpress": "true",
-        "ConnectionStrings__PharmacyManagement": "Server=DESKTOP-H9TF8EF\\SQLEXPRESS;Database=PharmacyManagement;Trusted_Connection=True;TrustServerCertificate=True;"
+        "ConnectionStrings__PharmacyManagement": "Server=db70451.public.databaseasp.net; Database=db70451; User Id=db70451; Password=8a=Z_Sw4H3@b; Encrypt=False; MultipleActiveResultSets=True;"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:7288;http://127.0.0.1:5288"
@@ -51,16 +51,17 @@
       "launchBrowser": true,
       "launchUrl": "scalar",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ConnectionStrings__PharmacyManagement": "Server=db70451.public.databaseasp.net; Database=db70451; User Id=db70451; Password=8a=Z_Sw4H3@b; Encrypt=False; TrustServerCertificate=True; MultipleActiveResultSets=True;"
       }
-    }
-  },
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iisExpress": {
-      "applicationUrl": "http://localhost:50316/",
-      "sslPort": 44385
+    },
+    "iisSettings": {
+      "windowsAuthentication": false,
+      "anonymousAuthentication": true,
+      "iisExpress": {
+        "applicationUrl": "http://localhost:50316/",
+        "sslPort": 44385
+      }
     }
   }
 }

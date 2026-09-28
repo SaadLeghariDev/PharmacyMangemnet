@@ -19,7 +19,7 @@
     label="Search"
     [placeholder]="tab === 'users' ? 'Username, name, email…' : 'Role name…'"
     [(ngModel)]="search"
-    (keydown)="$event.key === 'Enter' && applyFilters()"
+    (inputKeydown)="$event.key === 'Enter' && applyFilters()"
   />
   @if (tab === 'users') {
     <app-select label="Status" [options]="activeOptions" [(ngModel)]="activeFilter" />

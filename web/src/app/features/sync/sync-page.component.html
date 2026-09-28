@@ -20,7 +20,7 @@
     label="Search"
     [placeholder]="tab === 'nodes' ? 'Node or terminal…' : tab === 'batches' ? 'Batch or node…' : 'Key or entity…'"
     [(ngModel)]="search"
-    (keydown)="$event.key === 'Enter' && applyFilters()"
+    (inputKeydown)="$event.key === 'Enter' && applyFilters()"
   />
   @if (tab === 'nodes') {
     <app-select label="Branch" [options]="branchOptions" [(ngModel)]="branchFilter" />

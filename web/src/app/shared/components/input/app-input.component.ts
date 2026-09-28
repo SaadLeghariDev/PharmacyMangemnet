@@ -1,11 +1,19 @@
-import { Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+  forwardRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
   selector: 'app-input',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -24,6 +32,7 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/f
         </span>
       }
       <input
+        #control
         [attr.type]="type"
         [attr.name]="name"
         [attr.placeholder]="placeholder"
@@ -31,10 +40,9 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/f
         [attr.min]="min"
         [attr.step]="step"
         [disabled]="disabled"
-        [ngModel]="value"
-        (ngModelChange)="onChange($event)"
+        (input)="onInput($event)"
         (blur)="onTouched()"
-        (keydown)="keydown.emit($event)"
+        (keydown)="inputKeydown.emit($event)"
       />
       @if (hint && !error) {
         <span class="hint">{{ hint }}</span>
@@ -88,6 +96,9 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/f
   ],
 })
 export class AppInputComponent implements ControlValueAccessor {
+  @ViewChild('control', { static: true })
+  private readonly control?: ElementRef<HTMLInputElement>;
+
   @Input() label = '';
   @Input() type = 'text';
   @Input() name = '';
@@ -99,28 +110,35 @@ export class AppInputComponent implements ControlValueAccessor {
   @Input() disabled = false;
   @Input() min: string | number | null = null;
   @Input() step: string | number | null = null;
-  @Output() readonly keydown = new EventEmitter<KeyboardEvent>();
+  @Output() readonly inputKeydown = new EventEmitter<KeyboardEvent>();
 
-  value = '';
   private changed: (v: string) => void = () => undefined;
   private touched: () => void = () => undefined;
 
   writeValue(v: string | number | null): void {
-    this.value = v == null ? '' : String(v);
+    const next = v == null ? '' : String(v);
+    const el = this.control?.nativeElement;
+    if (el && el.value !== next) {
+      el.value = next;
+    }
   }
+
   registerOnChange(fn: (v: string) => void): void {
     this.changed = fn;
   }
+
   registerOnTouched(fn: () => void): void {
     this.touched = fn;
   }
+
   setDisabledState(isDisabled: boolean): void {
     this.disabled = isDisabled;
   }
-  onChange(v: string): void {
-    this.value = v;
-    this.changed(v);
+
+  onInput(event: Event): void {
+    this.changed((event.target as HTMLInputElement).value);
   }
+
   onTouched(): void {
     this.touched();
   }

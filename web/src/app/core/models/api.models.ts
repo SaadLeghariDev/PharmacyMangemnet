@@ -1740,3 +1740,67 @@ export interface IdempotencyKeySearchParams {
   terminalId?: number | null;
   entityType?: string | null;
 }
+
+export interface DashboardSummaryParams {
+  branchId?: number | null;
+  from?: string | null;
+  to?: string | null;
+}
+
+export interface DashboardKpisDto {
+  salesTotal: number;
+  billsCount: number;
+  avgTicket: number;
+  lowStockCount: number;
+  nearExpiryCount: number;
+  openCriticalAlerts: number;
+  previousPeriodSalesTotal: number;
+  previousPeriodBillsCount: number;
+}
+
+export interface DashboardSeriesPointDto {
+  label: string;
+  value: number;
+}
+
+export interface DashboardPaymentBreakdownDto {
+  methodName: string;
+  amount: number;
+}
+
+export interface DashboardTopProductDto {
+  productId: number;
+  productName: string;
+  sku?: string | null;
+  quantity: number;
+  revenue: number;
+}
+
+export interface DashboardRecentSaleDto {
+  id: number;
+  invoiceNumber: string;
+  saleDate: string;
+  netAmount: number;
+}
+
+export interface DashboardRiskItemDto {
+  kind: string;
+  name: string;
+  sku?: string | null;
+  quantity: number;
+  expiryDate?: string | null;
+  reorderPoint?: number | null;
+}
+
+export interface DashboardSummaryDto {
+  from: string;
+  to: string;
+  branchId?: number | null;
+  kpis: DashboardKpisDto;
+  salesByDay: DashboardSeriesPointDto[];
+  salesByHour: DashboardSeriesPointDto[];
+  paymentBreakdown: DashboardPaymentBreakdownDto[];
+  topProducts: DashboardTopProductDto[];
+  recentSales: DashboardRecentSaleDto[];
+  riskItems: DashboardRiskItemDto[];
+}

@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IStockAdjustmentService, StockAdjustmentService>();
         services.AddScoped<IStockCountService, StockCountService>();
         services.AddScoped<ISaleService, SaleService>();
+        services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IHeldSaleService, HeldSaleService>();
         services.AddScoped<ISaleReturnService, SaleReturnService>();
         services.AddScoped<ICashShiftService, CashShiftService>();

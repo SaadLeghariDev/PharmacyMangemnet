@@ -21,7 +21,7 @@
     label="Search"
     [placeholder]="tab === 'coa' ? 'Code or name…' : 'Entry number or description…'"
     [(ngModel)]="search"
-    (keydown)="$event.key === 'Enter' && applyFilters()"
+    (inputKeydown)="$event.key === 'Enter' && applyFilters()"
   />
   @if (tab === 'coa') {
     <app-select label="Type" [options]="typeOptions()" [(ngModel)]="typeFilter" />

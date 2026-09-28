@@ -1,5 +1,5 @@
 <div class="dashboard">
-  <app-page-header title="Dashboard" subtitle="Today’s pharmacy snapshot and quick links.">
+  <app-page-header title="Dashboard" subtitle="Enterprise pharmacy snapshot — sales, stock risk, and alerts.">
     <div class="links">
       <a routerLink="/pos"><app-button size="sm">Open POS</app-button></a>
       <a routerLink="/alerts"><app-button variant="secondary" size="sm">Alerts</app-button></a>
@@ -7,46 +7,217 @@
     </div>
   </app-page-header>
 
+  <div class="toolbar">
+    <div class="period-group" role="group" aria-label="Period">
+      <button type="button" class="period-btn" [class.active]="period === 'today'" (click)="setPeriod('today')">
+        Today
+      </button>
+      <button type="button" class="period-btn" [class.active]="period === '7d'" (click)="setPeriod('7d')">
+        7 days
+      </button>
+      <button type="button" class="period-btn" [class.active]="period === '30d'" (click)="setPeriod('30d')">
+        30 days
+      </button>
+    </div>
+    <app-select
+      label="Branch"
+      [options]="branchOptions()"
+      [(ngModel)]="branchId"
+      (ngModelChange)="onBranchChange()"
+    />
+    <div class="toolbar-actions">
+      <app-button variant="secondary" size="sm" (clicked)="load(true)" [loading]="loading()">Refresh</app-button>
+    </div>
+  </div>
+
   @if (error()) {
     <div class="error-banner" role="alert">
       <span>{{ error() }}</span>
-      <app-button variant="secondary" size="sm" (clicked)="load()">Retry</app-button>
+      <app-button variant="secondary" size="sm" (clicked)="load(true)">Retry</app-button>
     </div>
   }
 
-  @if (loading()) {
+  @if (loading() && !summary()) {
     <app-loading-state variant="page" />
-  } @else {
+  } @else if (summary()) {
     <div class="widgets">
-      <article class="widget">
-        <h2>Today’s sales</h2>
-        <div class="value">{{ todaySalesTotal() | currency: 'PKR':'symbol-narrow':'1.0-0' }}</div>
-      </article>
-      <article class="widget">
-        <h2>Low stock items</h2>
-        <div class="value">{{ lowStockCount() }}</div>
-      </article>
-      <article class="widget">
-        <h2>Near expiry (90d)</h2>
-        <div class="value">{{ nearExpiryCount() }}</div>
-      </article>
+      @if (canViewSales()) {
+        <article class="widget">
+          <h2>Sales</h2>
+          <div class="value">{{ kpis()!.salesTotal | currency: 'PKR':'symbol-narrow':'1.0-0' }}</div>
+          <span class="delta" [class]="deltaTone(salesDeltaPct())">{{ deltaLabel(salesDeltaPct()) }}</span>
+        </article>
+        <article class="widget">
+          <h2>Bills</h2>
+          <div class="value">{{ kpis()!.billsCount }}</div>
+          <span class="delta" [class]="deltaTone(billsDeltaPct())">{{ deltaLabel(billsDeltaPct()) }}</span>
+        </article>
+        <article class="widget">
+          <h2>Avg ticket</h2>
+          <div class="value">{{ kpis()!.avgTicket | currency: 'PKR':'symbol-narrow':'1.0-0' }}</div>
+          <span class="delta flat">period average</span>
+        </article>
+      }
+      @if (canViewInventory()) {
+        <article class="widget">
+          <h2>Low stock</h2>
+          <div class="value">{{ kpis()!.lowStockCount }}</div>
+          <span class="delta flat">reorder candidates</span>
+        </article>
+        <article class="widget">
+          <h2>Near expiry (90d)</h2>
+          <div class="value">{{ kpis()!.nearExpiryCount }}</div>
+          <span class="delta flat">batch risk</span>
+        </article>
+      }
+      @if (canViewAlerts()) {
+        <article class="widget">
+          <h2>Critical alerts</h2>
+          <div class="value danger">{{ kpis()!.openCriticalAlerts }}</div>
+          <span class="delta flat">open now</span>
+        </article>
+      }
     </div>
 
-    <section class="panel">
-      <h2>Recent sales</h2>
-      @if (!recentSales().length) {
-        <app-empty-state title="No sales yet" message="Completed sales will appear here." />
-      } @else {
-        <app-table [columns]="saleColumns" [hasActions]="false">
-          @for (row of recentSales(); track row.id) {
-            <tr>
-              <td>{{ row.invoiceNumber }}</td>
-              <td>{{ row.saleDate | date: 'short' }}</td>
-              <td class="num">{{ row.netAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
-            </tr>
+    @if (canViewSales()) {
+      <div class="charts-row">
+        <section class="panel chart-panel">
+          <h2>Sales trend</h2>
+          @if (salesChart(); as chart) {
+            <apx-chart
+              [series]="chart.series"
+              [chart]="chart.chart"
+              [xaxis]="chart.xaxis"
+              [yaxis]="chart.yaxis"
+              [dataLabels]="chart.dataLabels"
+              [stroke]="chart.stroke"
+              [fill]="chart.fill"
+              [tooltip]="chart.tooltip"
+              [colors]="chart.colors"
+            />
           }
-        </app-table>
-      }
-    </section>
+        </section>
+        <section class="panel chart-panel">
+          <h2>Payment mix</h2>
+          @if (paymentChart(); as chart) {
+            <apx-chart
+              [series]="chart.series"
+              [chart]="chart.chart"
+              [labels]="chart.labels"
+              [legend]="chart.legend"
+              [dataLabels]="chart.dataLabels"
+              [plotOptions]="chart.plotOptions"
+              [colors]="chart.colors"
+              [tooltip]="chart.tooltip"
+            />
+          }
+        </section>
+      </div>
+
+      <div class="panels-row">
+        <section class="panel">
+          <h2>Top selling medicines</h2>
+          @if (!summary()!.topProducts.length) {
+            <app-empty-state title="No sales in range" message="Completed sales will rank products here." />
+          } @else {
+            <app-table [columns]="topProductColumns" [hasActions]="false">
+              @for (row of summary()!.topProducts; track row.productId) {
+                <tr>
+                  <td>
+                    <strong>{{ row.productName }}</strong>
+                    @if (row.sku) {
+                      <small class="muted-inline">{{ row.sku }}</small>
+                    }
+                  </td>
+                  <td class="num">{{ row.quantity | number: '1.0-2' }}</td>
+                  <td class="num">{{ row.revenue | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+                </tr>
+              }
+            </app-table>
+          }
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Recent invoices</h2>
+          </div>
+          @if (!summary()!.recentSales.length) {
+            <app-empty-state title="No sales yet" message="Completed sales will appear here." />
+          } @else {
+            <app-table [columns]="saleColumns" [hasActions]="false">
+              @for (row of summary()!.recentSales; track row.id) {
+                <tr>
+                  <td>{{ row.invoiceNumber }}</td>
+                  <td>{{ row.saleDate | date: 'short' }}</td>
+                  <td class="num">{{ row.netAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+                </tr>
+              }
+            </app-table>
+          }
+        </section>
+      </div>
+    } @else {
+      <p class="perm-note">Sales charts and invoices require POS.SALE permission.</p>
+    }
+
+    @if (canViewInventory()) {
+      <section class="panel risk-panel">
+        <div class="panel-head">
+          <h2>Stock risk</h2>
+          <div class="risk-links">
+            <a routerLink="/inventory">Inventory</a>
+            <a routerLink="/alerts">Alerts</a>
+          </div>
+        </div>
+        <div class="risk-grid">
+          <div>
+            <h3>Low stock</h3>
+            @if (!lowStockRisk().length) {
+              <p class="muted">No low-stock candidates in sample.</p>
+            } @else {
+              <ul class="risk-list">
+                @for (item of lowStockRisk(); track item.name + item.sku) {
+                  <li>
+                    <a [routerLink]="riskLink(item)">
+                      <strong>{{ item.name }}</strong>
+                      <span
+                        >On hand {{ item.quantity | number: '1.0-2' }}
+                        @if (item.reorderPoint != null) {
+                          · reorder {{ item.reorderPoint | number: '1.0-2' }}
+                        }
+                      </span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+          <div>
+            <h3>Near expiry</h3>
+            @if (!nearExpiryRisk().length) {
+              <p class="muted">No near-expiry batches in sample.</p>
+            } @else {
+              <ul class="risk-list">
+                @for (item of nearExpiryRisk(); track item.name + item.expiryDate) {
+                  <li>
+                    <a [routerLink]="riskLink(item)">
+                      <strong>{{ item.name }}</strong>
+                      <span
+                        >{{ item.quantity | number: '1.0-2' }}
+                        @if (item.expiryDate) {
+                          · exp {{ item.expiryDate }}
+                        }
+                      </span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+      </section>
+    } @else {
+      <p class="perm-note">Stock risk requires INV.VIEW permission.</p>
+    }
   }
 </div>

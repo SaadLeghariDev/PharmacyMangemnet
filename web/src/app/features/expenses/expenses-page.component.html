@@ -11,7 +11,7 @@
     label="Search"
     placeholder="Number, category, description…"
     [(ngModel)]="search"
-    (keydown)="$event.key === 'Enter' && applyFilters()"
+    (inputKeydown)="$event.key === 'Enter' && applyFilters()"
   />
   <app-input label="From" type="date" [(ngModel)]="fromDate" />
   <app-input label="To" type="date" [(ngModel)]="toDate" />

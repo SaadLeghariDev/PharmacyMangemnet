@@ -23,7 +23,7 @@
     label="Search"
     placeholder="Key, value, entity…"
     [(ngModel)]="search"
-    (keydown)="$event.key === 'Enter' && applyFilters()"
+    (inputKeydown)="$event.key === 'Enter' && applyFilters()"
   />
   @if (tab === 'branch' || tab === 'audit') {
     <app-select label="Branch" [options]="branchOptions" [(ngModel)]="branchFilter" />

@@ -18,7 +18,7 @@
       label="Search"
       placeholder="SKU, product, warehouse…"
       [(ngModel)]="search"
-      (keydown)="$event.key === 'Enter' && applyFilters()"
+      (inputKeydown)="$event.key === 'Enter' && applyFilters()"
     />
   }
   <app-select label="Branch" [options]="branchOptions" [(ngModel)]="branchFilter" />

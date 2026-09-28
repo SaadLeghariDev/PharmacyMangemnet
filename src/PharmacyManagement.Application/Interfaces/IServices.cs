@@ -5,6 +5,7 @@ using PharmacyManagement.Application.DTOs.Auth;
 using PharmacyManagement.Application.DTOs.Cash;
 using PharmacyManagement.Application.DTOs.Controlled;
 using PharmacyManagement.Application.DTOs.Customers;
+using PharmacyManagement.Application.DTOs.Dashboard;
 using PharmacyManagement.Application.DTOs.Expenses;
 using PharmacyManagement.Application.DTOs.Finance;
 using PharmacyManagement.Application.DTOs.Fiscal;
@@ -495,4 +496,9 @@ public interface ISyncService
     Task<SyncPushPullResultDto> PullAsync(SyncPullRequest request, CancellationToken ct = default);
 
     Task<PagedResult<IdempotencyKeyDto>> SearchIdempotencyKeysAsync(IdempotencyKeyQuery query, CancellationToken ct = default);
+}
+
+public interface IDashboardService
+{
+    Task<DashboardSummaryDto> GetSummaryAsync(DashboardSummaryQuery query, CancellationToken ct = default);
 }

@@ -1,241 +1,605 @@
-<app-page-header
-  title="Sales / POS"
-  [subtitle]="
-    context()
-      ? context()!.branchName + ' · Terminal ' + context()!.terminalCode + ' · ' + context()!.warehouseName
-      : 'Loading terminal context…'
-  "
->
-  <app-button variant="secondary" size="sm" (clicked)="refreshHolds()" [disabled]="!context()"
-    >Refresh holds</app-button
-  >
-  <app-button variant="secondary" size="sm" (clicked)="askClear()" [disabled]="!lines().length"
-    >Clear cart</app-button
-  >
-</app-page-header>
-
 @if (loadingContext()) {
-  <app-loading-state label="Loading branch and terminal…" />
+  <div class="pos-boot">
+    <app-loading-state label="Loading branch and terminal…" />
+  </div>
+} @else if (contextError()) {
+  <div class="pos-boot">
+    <div class="error-banner" role="alert">
+      <span>{{ contextError() }}</span>
+      <app-button variant="secondary" size="sm" (clicked)="bootstrapContext()">Retry</app-button>
+    </div>
+  </div>
 } @else {
-  <div class="pos-layout">
-    <section class="cart-panel">
-      <div class="search-row">
-        <app-input
-          label="Barcode / search"
-          placeholder="Scan barcode or type name / SKU, then Enter"
-          [(ngModel)]="search"
-          (keydown)="onSearchKey($event)"
-          [disabled]="busy() || !context()"
-        />
+  <div class="pos-shell">
+    <header class="terminal-bar">
+      <div class="terminal-meta">
+        <strong>POS Counter</strong>
+        <span>{{ context()!.branchName }}</span>
+        <span class="sep">·</span>
+        <span>T{{ context()!.terminalCode }}</span>
+        <span class="sep">·</span>
+        <span>{{ context()!.warehouseName }}</span>
+      </div>
+      <div class="shortcut-hints" aria-hidden="true">
+        <span><kbd>F2</kbd> Search</span>
+        <span><kbd>F4</kbd> Hold</span>
+        <span><kbd>F8</kbd> Pay</span>
+        <span><kbd>Esc</kbd> Clear</span>
+      </div>
+      <div class="terminal-actions">
+        <app-button variant="secondary" size="sm" (clicked)="refreshHolds()">Holds</app-button>
         <app-button
-          class="search-btn"
-          (clicked)="resolveSearch()"
-          [disabled]="busy() || !search.trim() || !context()"
-          [loading]="busy()"
-          >Add</app-button
+          variant="secondary"
+          size="sm"
+          (clicked)="askClear()"
+          [disabled]="!lines().length"
+          >Clear</app-button
         >
       </div>
+    </header>
 
-      @if (suggestions().length) {
-        <ul class="suggestions">
-          @for (p of suggestions(); track p.id) {
-            <li>
-              <button type="button" (click)="pickSuggestion(p)">
-                <span>
-                  <strong>{{ p.name }}</strong>
-                  <small>{{ p.sku }}@if (p.genericName) { · {{ p.genericName }} }</small>
-                </span>
-                <app-badge tone="primary">Add</app-badge>
-              </button>
-            </li>
-          }
-        </ul>
-      }
-
-      @if (!lines().length) {
-        <app-empty-state
-          title="Cart is empty"
-          message="Scan a barcode or search a medicine to start the sale."
-        />
-      } @else {
-        <div class="table-wrap">
-          <table class="cart-table">
-            <thead>
-              <tr>
-                <th>Medicine</th>
-                <th>Batch</th>
-                <th>Expiry</th>
-                <th>Qty</th>
-                <th>Unit Price</th>
-                <th>Discount</th>
-                <th>Subtotal</th>
-                <th>Total</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (line of lines(); track line.productId + '-' + line.productUnitId) {
-                <tr>
-                  <td>
-                    <strong>{{ line.productName }}</strong>
-                    <small>{{ line.sku }}</small>
-                  </td>
-                  <td>{{ line.batchNumber || 'FEFO' }}</td>
-                  <td>{{ line.expiryDate || '—' }}</td>
-                  <td>
-                    <input
-                      class="num"
-                      type="number"
-                      min="0.001"
-                      step="1"
-                      [ngModel]="line.quantity"
-                      (ngModelChange)="updateQty(line, $event)"
-                    />
-                  </td>
-                  <td>{{ line.unitPrice | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
-                  <td>
-                    <input
-                      class="num"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      [ngModel]="line.discountAmount"
-                      (ngModelChange)="updateDiscount(line, $event)"
-                    />
-                  </td>
-                  <td>{{ line.quantity * line.unitPrice | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
-                  <td>{{ lineTotal(line) | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
-                  <td>
-                    <app-button variant="ghost" size="sm" (clicked)="askRemove(line)">Remove</app-button>
-                  </td>
-                </tr>
+    <div class="pos-body">
+      <section class="cart-col">
+        <div class="search-block">
+          <label class="search-label" for="pos-search">Barcode / medicine</label>
+          <div class="search-row">
+            <input
+              #searchBox
+              id="pos-search"
+              class="pos-search-input"
+              type="text"
+              [ngModel]="search"
+              (ngModelChange)="onSearchInput($event)"
+              (keydown)="onSearchKey($event)"
+              [disabled]="busy()"
+              placeholder="Type medicine name or scan barcode…"
+              autocomplete="off"
+              role="combobox"
+              [attr.aria-expanded]="suggestOpen()"
+              aria-autocomplete="list"
+              aria-controls="pos-suggest-list"
+            />
+            <app-button (clicked)="resolveSearch()" [disabled]="busy() || !search.trim()" [loading]="busy()"
+              >Add</app-button
+            >
+          </div>
+          @if (suggestOpen()) {
+            <div class="suggest-panel" id="pos-suggest-list" role="listbox">
+              @if (suggestLoading()) {
+                <p class="suggest-status">Searching…</p>
+              } @else if (suggestEmpty()) {
+                <p class="suggest-status">No products found</p>
+              } @else {
+                <ul class="suggest-list">
+                  @for (s of suggestions(); track s.product.id; let i = $index) {
+                    <li>
+                      <button
+                        type="button"
+                        class="suggest-item"
+                        role="option"
+                        [class.active]="highlightIndex() === i"
+                        [attr.aria-selected]="highlightIndex() === i"
+                        (click)="pickSuggestion(s.product)"
+                        (mouseenter)="highlightIndex.set(i)"
+                      >
+                        <span class="suggest-main">
+                          <span class="suggest-name" [innerHTML]="highlightName(s.product.name)"></span>
+                          @if (productDetailLine(s.product); as detail) {
+                            <small>{{ detail }}</small>
+                          }
+                          <small class="suggest-sku">{{ s.product.sku }}</small>
+                        </span>
+                        <span class="suggest-meta">
+                          <span class="suggest-stock" [class.out]="s.availableQuantity === 0">
+                            @if (s.availableQuantity == null) {
+                              …
+                            } @else if (s.availableQuantity <= 0) {
+                              No stock
+                            } @else {
+                              Qty {{ s.availableQuantity | number: '1.0-2' }}
+                            }
+                          </span>
+                          <strong class="suggest-price">
+                            @if (s.salePrice != null) {
+                              {{ s.salePrice | currency: 'PKR':'symbol-narrow':'1.2-2' }}
+                            } @else {
+                              —
+                            }
+                          </strong>
+                        </span>
+                      </button>
+                    </li>
+                  }
+                </ul>
               }
-            </tbody>
-          </table>
+            </div>
+          }
         </div>
-      }
-    </section>
 
-    <aside class="checkout-panel">
-      <div class="payable-card">
-        <span class="label">Payable</span>
-        <p class="amount">{{ payable() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</p>
-        <dl class="breakdown">
+        @if (!lines().length) {
+          <div class="cart-empty">
+            <app-empty-state
+              title="Ready to sell"
+              message="Scan a barcode or search a medicine. Counter is keyboard-first (F2)."
+            />
+          </div>
+        } @else {
+          <div class="cart-meta">
+            <span>{{ lines().length }} lines · {{ itemCount() | number: '1.0-2' }} units</span>
+          </div>
+          <div class="table-wrap">
+            <table class="cart-table">
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th>Batch</th>
+                  <th>Expiry</th>
+                  <th>Qty</th>
+                  <th>Price</th>
+                  <th>Disc</th>
+                  <th>Total</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (line of lines(); track line.productId + '-' + line.productUnitId) {
+                  <tr>
+                    <td>
+                      <strong>{{ line.productName }}</strong>
+                      <small>{{ line.sku }}</small>
+                    </td>
+                    <td>{{ line.batchNumber || 'FEFO' }}</td>
+                    <td>{{ line.expiryDate || '—' }}</td>
+                    <td>
+                      <div class="qty-stepper">
+                        <button type="button" (click)="bumpQty(line, -1)" [disabled]="line.quantity <= 1">−</button>
+                        <input
+                          class="num"
+                          type="number"
+                          min="0.001"
+                          step="1"
+                          [ngModel]="line.quantity"
+                          (ngModelChange)="updateQty(line, $event)"
+                        />
+                        <button type="button" (click)="bumpQty(line, 1)">+</button>
+                      </div>
+                    </td>
+                    <td class="num-cell">{{ line.unitPrice | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+                    <td>
+                      <input
+                        class="num"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        [ngModel]="line.discountAmount"
+                        (ngModelChange)="updateDiscount(line, $event)"
+                      />
+                    </td>
+                    <td class="num-cell">{{ lineTotal(line) | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+                    <td>
+                      <button type="button" class="link-danger" (click)="askRemove(line)">×</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <aside class="rail">
+        <section class="rail-card customer-card">
+          <div class="rail-card-head">
+            <h2>Customer</h2>
+            <app-button variant="ghost" size="sm" (clicked)="openCreateCustomer()">+ New</app-button>
+          </div>
+          <div class="search-row compact">
+            <input
+              class="rail-input"
+              type="text"
+              [(ngModel)]="customerSearch"
+              (keydown)="onCustomerSearchKey($event)"
+              placeholder="Name, phone, or code"
+              autocomplete="off"
+            />
+            <app-button
+              variant="secondary"
+              size="sm"
+              (clicked)="searchCustomers()"
+              [disabled]="!customerSearch.trim()"
+              >Find</app-button
+            >
+          </div>
+          @if (selectedCustomer(); as cust) {
+            <div class="customer-selected">
+              <div>
+                <strong>{{ cust.name }}</strong>
+                <small
+                  >{{ cust.customerCode }}
+                  @if (cust.phone) {
+                    · {{ cust.phone }}
+                  }
+                </small>
+                <small class="credit"
+                  >Bal {{ cust.balance | currency: 'PKR':'symbol-narrow':'1.0-0' }} · Limit
+                  {{ cust.creditLimit | currency: 'PKR':'symbol-narrow':'1.0-0' }}</small
+                >
+              </div>
+              <app-button variant="ghost" size="sm" (clicked)="clearCustomer()">Walk-in</app-button>
+            </div>
+          } @else {
+            <p class="walkin">Walk-in customer</p>
+          }
+          @if (customerSuggestions().length) {
+            <ul class="suggestions compact">
+              @for (c of customerSuggestions(); track c.id) {
+                <li>
+                  <button type="button" (click)="pickCustomer(c)">
+                    <span>
+                      <strong>{{ c.name }}</strong>
+                      <small>{{ c.customerCode }}@if (c.phone) { · {{ c.phone }} }</small>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        <section class="rail-card totals-card">
+          <h2>Totals</h2>
+          <label class="inline-field">
+            <span>Invoice discount %</span>
+            <input
+              class="num wide"
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              [ngModel]="invoiceDiscountPct()"
+              (ngModelChange)="setInvoiceDiscountPct($event)"
+              [disabled]="!lines().length"
+            />
+          </label>
+          <dl class="totals">
+            <div>
+              <dt>Subtotal</dt>
+              <dd>{{ subtotal() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+            </div>
+            <div>
+              <dt>Discount</dt>
+              <dd>−{{ discountTotal() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+            </div>
+            <div>
+              <dt>Tax (est.)</dt>
+              <dd>{{ taxTotal() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+            </div>
+            <div class="payable-row">
+              <dt>Payable</dt>
+              <dd>{{ payable() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="rail-card pay-card">
+          <div class="rail-card-head">
+            <h2>Payment</h2>
+            <label class="split-toggle">
+              <input type="checkbox" [ngModel]="splitEnabled()" (ngModelChange)="toggleSplit($event)" />
+              Split
+            </label>
+          </div>
+
+          @if (!splitEnabled()) {
+            <div class="method-toggles" role="group" aria-label="Payment method">
+              <button
+                type="button"
+                [class.active]="payMethod() === cashMethodId"
+                (click)="setPayMethod(cashMethodId)"
+              >
+                Cash
+              </button>
+              <button
+                type="button"
+                [class.active]="payMethod() === cardMethodId"
+                (click)="setPayMethod(cardMethodId)"
+              >
+                Card
+              </button>
+              <button
+                type="button"
+                [class.active]="payMethod() === bankMethodId"
+                (click)="setPayMethod(bankMethodId)"
+              >
+                Bank
+              </button>
+            </div>
+            @if (payMethod() === cashMethodId) {
+              <label class="inline-field">
+                <span>Tendered</span>
+                <input
+                  class="num wide"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [ngModel]="cashTendered()"
+                  (ngModelChange)="setCashTendered($event)"
+                  [disabled]="!lines().length"
+                  placeholder="Exact or more"
+                />
+              </label>
+              <div class="chips">
+                <button type="button" (click)="setExactTender()" [disabled]="!lines().length">Exact</button>
+                <button type="button" (click)="addTenderChip(100)" [disabled]="!lines().length">+100</button>
+                <button type="button" (click)="addTenderChip(500)" [disabled]="!lines().length">+500</button>
+                <button type="button" (click)="addTenderChip(1000)" [disabled]="!lines().length">+1000</button>
+                <button type="button" (click)="roundUpTender()" [disabled]="!lines().length">Round ↑</button>
+              </div>
+              @if (changePreview() !== null) {
+                <p class="change">Change {{ changePreview() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</p>
+              }
+            }
+          } @else {
+            <label class="inline-field">
+              <span>Cash</span>
+              <input
+                class="num wide"
+                type="number"
+                min="0"
+                step="0.01"
+                [ngModel]="cashPay()"
+                (ngModelChange)="setCashPay($event)"
+              />
+            </label>
+            <label class="inline-field">
+              <span>Card</span>
+              <input
+                class="num wide"
+                type="number"
+                min="0"
+                step="0.01"
+                [ngModel]="cardPay()"
+                (ngModelChange)="setCardPay($event)"
+              />
+            </label>
+            <p class="split-hint" [class.bad]="splitRemainder() !== 0">
+              @if (splitRemainder() === 0) {
+                Split balances payable
+              } @else {
+                Remainder {{ splitRemainder() | currency: 'PKR':'symbol-narrow':'1.2-2' }}
+              }
+            </p>
+            @if ((cashPay() || 0) > 0) {
+              <label class="inline-field">
+                <span>Cash tendered</span>
+                <input
+                  class="num wide"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [ngModel]="cashTendered()"
+                  (ngModelChange)="setCashTendered($event)"
+                />
+              </label>
+              <div class="chips">
+                <button type="button" (click)="setExactTender()">Exact</button>
+                <button type="button" (click)="addTenderChip(500)">+500</button>
+              </div>
+              @if (changePreview() !== null) {
+                <p class="change">Change {{ changePreview() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</p>
+              }
+            }
+          }
+
+          <div class="pay-actions">
+            <app-button
+              [block]="true"
+              [loading]="busy()"
+              [disabled]="!lines().length"
+              (clicked)="completeSale()"
+              >Pay · F8</app-button
+            >
+            <app-button
+              variant="secondary"
+              [block]="true"
+              [disabled]="busy() || !lines().length"
+              (clicked)="holdCart()"
+              >Hold · F4</app-button
+            >
+          </div>
+        </section>
+
+        <section class="rail-card holds-card no-print">
+          <h2>Held carts</h2>
+          @if (!heldSales().length) {
+            <p class="muted">No open holds</p>
+          } @else {
+            <ul class="holds-list">
+              @for (h of heldSales(); track h.id) {
+                <li>
+                  <div>
+                    <strong>#{{ h.id }}</strong>
+                    <small
+                      >{{ h.heldAt | date: 'shortTime' }} ·
+                      {{ h.totalAmount | currency: 'PKR':'symbol-narrow':'1.0-0' }}</small
+                    >
+                  </div>
+                  <div class="hold-actions">
+                    <app-button variant="ghost" size="sm" (clicked)="resumeHold(h)">Resume</app-button>
+                    <app-button variant="ghost" size="sm" (clicked)="discardHold(h)">×</app-button>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      </aside>
+    </div>
+  </div>
+}
+
+<app-modal
+  [open]="createCustomerOpen()"
+  title="Quick add customer"
+  size="sm"
+  [showFooter]="true"
+  (closed)="createCustomerOpen.set(false)"
+>
+  <div class="modal-form">
+    <app-input label="Name" [(ngModel)]="newCustName" [required]="true" />
+    <app-input label="Phone" [(ngModel)]="newCustPhone" />
+  </div>
+  <div modal-footer class="modal-footer-row">
+    <app-button variant="secondary" (clicked)="createCustomerOpen.set(false)">Cancel</app-button>
+    <app-button (clicked)="saveNewCustomer()" [loading]="savingCustomer()">Save & select</app-button>
+  </div>
+</app-modal>
+
+<app-modal
+  [open]="receiptOpen()"
+  title="Invoice preview"
+  size="lg"
+  [showFooter]="true"
+  [closeOnBackdrop]="false"
+  (closed)="closeReceipt()"
+>
+  @if (receipt(); as r) {
+    <div class="invoice-preview-scroll no-print">
+      <ng-container *ngTemplateOutlet="invoiceTpl; context: { $implicit: r }" />
+    </div>
+  }
+  <div modal-footer class="modal-footer-row no-print">
+    <app-button variant="secondary" (clicked)="closeReceipt()">Close</app-button>
+    <app-button variant="secondary" (clicked)="newSaleFromReceipt()">New sale</app-button>
+    <app-button (clicked)="printReceipt()">Print Invoice</app-button>
+  </div>
+</app-modal>
+
+<!-- Print-only root: outside modal so print CSS can isolate cleanly -->
+<div id="pos-print-root" aria-hidden="true">
+  @if (receipt(); as r) {
+    <ng-container *ngTemplateOutlet="invoiceTpl; context: { $implicit: r }" />
+  }
+</div>
+
+<ng-template #invoiceTpl let-r>
+  <article class="pharm-invoice">
+    <header class="inv-header">
+      <div class="inv-brand">
+        <div class="inv-logo" aria-hidden="true">P</div>
+        <div>
+          <h1>{{ r.branchName || context()?.branchName || 'Pharmacy' }}</h1>
+          <p>Pharmacy retail invoice</p>
+          @if (context()?.warehouseName) {
+            <p class="inv-muted">{{ context()!.warehouseName }} · Terminal {{ r.terminalCode || context()?.terminalCode }}</p>
+          }
+        </div>
+      </div>
+      <div class="inv-meta">
+        <p class="inv-title">INVOICE</p>
+        <dl>
           <div>
-            <dt>Subtotal</dt>
-            <dd>{{ subtotal() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+            <dt>Invoice No</dt>
+            <dd>{{ r.sale.invoiceNumber }}</dd>
           </div>
           <div>
-            <dt>Discount</dt>
-            <dd>{{ discountTotal() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+            <dt>Date</dt>
+            <dd>{{ r.sale.saleDate | date: 'medium' }}</dd>
           </div>
           <div>
-            <dt>Tax</dt>
-            <dd>{{ taxTotal() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+            <dt>Cashier</dt>
+            <dd>{{ r.cashierName || '—' }}</dd>
           </div>
         </dl>
       </div>
+    </header>
 
-      <app-select
-        label="Payment method"
-        [options]="paymentOptions"
-        [(ngModel)]="paymentMethodId"
-      />
-      <app-input
-        label="Amount tendered"
-        type="number"
-        min="0"
-        step="0.01"
-        placeholder="Leave blank for exact"
-        [(ngModel)]="tendered"
-        [disabled]="!lines().length"
-      />
-      @if (changePreview() !== null) {
-        <p class="change">Change: {{ changePreview() | currency: 'PKR':'symbol-narrow':'1.2-2' }}</p>
-      }
-
-      <div class="actions">
-        <app-button
-          [block]="true"
-          [loading]="busy()"
-          [disabled]="!lines().length || !context()"
-          (clicked)="completeSale()"
-          >Complete sale</app-button
-        >
-        <app-button
-          variant="secondary"
-          [block]="true"
-          [disabled]="busy() || !lines().length || !context()"
-          (clicked)="holdCart()"
-          >Hold cart</app-button
-        >
-      </div>
-
-      <div class="holds">
-        <div class="holds-head">
-          <h2>Held carts</h2>
-        </div>
-        @if (!heldSales().length) {
-          <p class="muted">No open holds on this terminal.</p>
-        } @else {
-          <ul>
-            @for (h of heldSales(); track h.id) {
-              <li>
-                <div>
-                  <strong>#{{ h.id }}</strong>
-                  <small
-                    >{{ h.heldAt | date: 'short' }} ·
-                    {{ h.totalAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</small
-                  >
-                </div>
-                <div class="hold-actions">
-                  <app-button variant="ghost" size="sm" (clicked)="resumeHold(h)">Resume</app-button>
-                  <app-button variant="ghost" size="sm" (clicked)="discardHold(h)">Discard</app-button>
-                </div>
-              </li>
-            }
-          </ul>
+    <section class="inv-parties">
+      <div>
+        <h2>Billed to</h2>
+        <p class="inv-customer">{{ r.customerName || 'Walk-in customer' }}</p>
+        @if (receiptCustomerPhone()) {
+          <p class="inv-muted">{{ receiptCustomerPhone() }}</p>
         }
       </div>
+      <div>
+        <h2>Payment</h2>
+        <p>{{ paymentSummary() }}</p>
+        <p class="inv-muted">Status: {{ r.sale.paymentStatus || r.sale.status }}</p>
+      </div>
+    </section>
 
-      @if (receipt(); as r) {
-        <div class="receipt">
-          <div class="receipt-head">
-            <h2>Receipt</h2>
-            <app-badge tone="success">{{ r.sale.status }}</app-badge>
-          </div>
-          <p class="invoice">{{ r.sale.invoiceNumber }}</p>
-          <dl>
-            <div>
-              <dt>Net</dt>
-              <dd>{{ r.sale.netAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
-            </div>
-            <div>
-              <dt>Paid</dt>
-              <dd>{{ r.sale.paidAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
-            </div>
-            <div>
-              <dt>Change</dt>
-              <dd>{{ r.sale.changeAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
-            </div>
-            <div>
-              <dt>Cashier</dt>
-              <dd>{{ r.cashierName || '—' }}</dd>
-            </div>
-          </dl>
-          <ul>
-            @for (line of r.sale.lines; track line.id) {
-              <li>
-                <span>{{ line.productName }} × {{ line.quantity }}</span>
-                <span>{{ line.netAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</span>
-              </li>
-            }
-          </ul>
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th class="col-item">Product</th>
+          <th class="col-qty">Qty</th>
+          <th class="col-num">Unit price</th>
+          <th class="col-num">Discount</th>
+          <th class="col-num">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (line of r.sale.lines; track line.id) {
+          <tr>
+            <td class="col-item">
+              <strong>{{ line.productName }}</strong>
+              @if (line.sku) {
+                <small>{{ line.sku }}</small>
+              }
+            </td>
+            <td class="col-qty">{{ line.quantity | number: '1.0-2' }}</td>
+            <td class="col-num">{{ line.unitPrice | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+            <td class="col-num">{{ line.discountAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+            <td class="col-num">{{ line.netAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <section class="inv-totals">
+      <dl>
+        <div>
+          <dt>Subtotal</dt>
+          <dd>{{ r.sale.subtotal | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
         </div>
-      }
-    </aside>
-  </div>
-}
+        <div>
+          <dt>Discount</dt>
+          <dd>−{{ r.sale.discountAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+        </div>
+        <div>
+          <dt>Tax / VAT</dt>
+          <dd>{{ r.sale.taxAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+        </div>
+        <div class="grand">
+          <dt>Grand total</dt>
+          <dd>{{ r.sale.netAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+        </div>
+        <div>
+          <dt>Paid</dt>
+          <dd>{{ r.sale.paidAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+        </div>
+        @if (r.sale.dueAmount > 0) {
+          <div class="due">
+            <dt>Due</dt>
+            <dd>{{ r.sale.dueAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+          </div>
+        }
+        @if (r.sale.changeAmount > 0) {
+          <div>
+            <dt>Change</dt>
+            <dd>{{ r.sale.changeAmount | currency: 'PKR':'symbol-narrow':'1.2-2' }}</dd>
+          </div>
+        }
+      </dl>
+    </section>
+
+    <footer class="inv-footer">
+      <p>Thank you for your business</p>
+      <p class="inv-muted">This is a computer-generated invoice.</p>
+    </footer>
+  </article>
+</ng-template>
 
 <app-confirm-dialog
   [open]="!!confirmRemove()"

@@ -97,3 +97,62 @@ p {
   clip: rect(0, 0, 0, 0);
   border: 0;
 }
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  .shell > aside,
+  .shell .topbar,
+  app-pos > .pos-shell,
+  app-pos > .pos-boot,
+  app-modal,
+  app-confirm-dialog,
+  app-snackbar,
+  .no-print {
+    display: none !important;
+  }
+
+  .shell,
+  .shell .main,
+  .shell .content,
+  app-pos {
+    display: block !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  #pos-print-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 180mm;
+    margin: 0 auto;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  #pos-print-root .pharm-invoice {
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #pos-print-root tr,
+  #pos-print-root .inv-totals,
+  #pos-print-root .inv-header {
+    page-break-inside: avoid;
+  }
+}

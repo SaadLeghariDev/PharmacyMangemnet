@@ -11,6 +11,8 @@ import {
   CustomerLedgerEntryDto,
   CustomerLedgerSearchParams,
   CustomerSearchParams,
+  DashboardSummaryDto,
+  DashboardSummaryParams,
   GoodsReceiptDto,
   GoodsReceiptSearchParams,
   PurchaseOrderDto,
@@ -359,6 +361,18 @@ export class PharmacyApiService {
     if (params.toDate) httpParams = httpParams.set('toDate', params.toDate);
     return this.http
       .get<ApiResponse<PagedResult<SaleDto>>>(`${this.base}/api/v1/sales`, { params: httpParams })
+      .pipe(map((r) => this.unwrap(r)));
+  }
+
+  getDashboardSummary(params: DashboardSummaryParams = {}): Observable<DashboardSummaryDto> {
+    let httpParams = new HttpParams();
+    if (params.branchId != null) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.from) httpParams = httpParams.set('from', params.from);
+    if (params.to) httpParams = httpParams.set('to', params.to);
+    return this.http
+      .get<ApiResponse<DashboardSummaryDto>>(`${this.base}/api/v1/dashboard/summary`, {
+        params: httpParams,
+      })
       .pipe(map((r) => this.unwrap(r)));
   }
 

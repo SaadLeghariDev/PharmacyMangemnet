@@ -1,6 +1,14 @@
-import { Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+  forwardRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 export interface AppSelectOption {
   value: string | number;
@@ -10,7 +18,7 @@ export interface AppSelectOption {
 @Component({
   selector: 'app-select',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -29,16 +37,16 @@ export interface AppSelectOption {
         </span>
       }
       <select
+        #control
         [disabled]="disabled"
-        [ngModel]="value"
-        (ngModelChange)="onChange($event)"
+        (change)="onSelectChange($event)"
         (blur)="onTouched()"
       >
         @if (placeholder) {
-          <option [ngValue]="''" disabled>{{ placeholder }}</option>
+          <option value="" disabled>{{ placeholder }}</option>
         }
         @for (opt of options; track opt.value) {
-          <option [ngValue]="opt.value">{{ opt.label }}</option>
+          <option [value]="stringify(opt.value)">{{ opt.label }}</option>
         }
       </select>
       @if (error) {
@@ -81,6 +89,9 @@ export interface AppSelectOption {
   ],
 })
 export class AppSelectComponent implements ControlValueAccessor {
+  @ViewChild('control', { static: true })
+  private readonly control?: ElementRef<HTMLSelectElement>;
+
   @Input() label = '';
   @Input() placeholder = '';
   @Input() error = '';
@@ -89,28 +100,45 @@ export class AppSelectComponent implements ControlValueAccessor {
   @Input() options: AppSelectOption[] = [];
   @Output() readonly selectionChange = new EventEmitter<string | number>();
 
-  value: string | number = '';
+  private value: string | number = '';
   private changed: (v: string | number) => void = () => undefined;
   private touched: () => void = () => undefined;
 
   writeValue(v: string | number | null): void {
     this.value = v ?? '';
+    const el = this.control?.nativeElement;
+    const next = this.stringify(this.value);
+    if (el && el.value !== next) {
+      el.value = next;
+    }
   }
+
   registerOnChange(fn: (v: string | number) => void): void {
     this.changed = fn;
   }
+
   registerOnTouched(fn: () => void): void {
     this.touched = fn;
   }
+
   setDisabledState(isDisabled: boolean): void {
     this.disabled = isDisabled;
   }
-  onChange(v: string | number): void {
-    this.value = v;
-    this.changed(v);
-    this.selectionChange.emit(v);
+
+  onSelectChange(event: Event): void {
+    const raw = (event.target as HTMLSelectElement).value;
+    const matched = this.options.find((o) => this.stringify(o.value) === raw);
+    const next = matched ? matched.value : raw;
+    this.value = next;
+    this.changed(next);
+    this.selectionChange.emit(next);
   }
+
   onTouched(): void {
     this.touched();
+  }
+
+  stringify(v: string | number): string {
+    return v == null ? '' : String(v);
   }
 }

@@ -10,7 +10,7 @@
     label="Search"
     placeholder="SKU, product, list…"
     [(ngModel)]="search"
-    (keydown)="$event.key === 'Enter' && applyFilters()"
+    (inputKeydown)="$event.key === 'Enter' && applyFilters()"
   />
   <app-select label="Price list" [options]="priceListOptions()" [(ngModel)]="priceListFilter" />
   <label class="check">

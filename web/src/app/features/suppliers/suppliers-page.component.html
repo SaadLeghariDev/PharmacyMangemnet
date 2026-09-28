@@ -9,7 +9,7 @@
     label="Search"
     placeholder="Code or name…"
     [(ngModel)]="search"
-    (keydown)="$event.key === 'Enter' && load()"
+    (inputKeydown)="$event.key === 'Enter' && load()"
   />
   <div class="toolbar-actions">
     <app-button variant="secondary" (clicked)="load()" [loading]="loading()">Search</app-button>

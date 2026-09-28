@@ -1,6 +1,5 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'https://localhost:44385',
-  /** Seed defaults when org lists return a single demo branch/terminal. */
+  apiBaseUrl: 'https://localhost:7288',
   defaultCashPaymentMethodId: 1,
 };

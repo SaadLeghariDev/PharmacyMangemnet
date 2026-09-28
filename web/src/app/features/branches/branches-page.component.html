@@ -10,7 +10,7 @@
     label="Search"
     placeholder="Code, name, city…"
     [(ngModel)]="search"
-    (keydown)="$event.key === 'Enter' && applyFilters()"
+    (inputKeydown)="$event.key === 'Enter' && applyFilters()"
   />
   <app-select label="Status" [options]="activeOptions" [(ngModel)]="activeFilter" />
   <div class="toolbar-actions">

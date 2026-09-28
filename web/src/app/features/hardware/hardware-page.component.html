@@ -23,7 +23,7 @@
       label="Search"
       [placeholder]="tab === 'attachments' ? 'File name or path…' : 'Name…'"
       [(ngModel)]="search"
-      (keydown)="$event.key === 'Enter' && applyFilters()"
+      (inputKeydown)="$event.key === 'Enter' && applyFilters()"
     />
   }
   @if (tab === 'devices' || tab === 'jobs') {
