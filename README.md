@@ -55,8 +55,8 @@ dotnet build
 dotnet run --project src/PharmacyManagement.Api --launch-profile PharmacyManagement.Api
 ```
 
-- Swagger: http://127.0.0.1:5288/swagger  
-- OpenAPI JSON: http://127.0.0.1:5288/swagger/v1/swagger.json (must include `"openapi"`)  
+- Scalar API docs: http://127.0.0.1:5288/scalar  
+- OpenAPI JSON: http://127.0.0.1:5288/openapi/v1.json (must include `"openapi"`)  
 - Health: http://127.0.0.1:5288/health  
 - Connection string key: `ConnectionStrings:PharmacyManagement`  
 - CORS origins include Angular `http://127.0.0.1:43123` (see `Cors:AllowedOrigins`)
@@ -81,11 +81,10 @@ dotnet run --project src/PharmacyManagement.Api --launch-profile LocalExpress
 #### Visual Studio / Windows
 
 1. Select the **LocalExpress** profile (or **https (LocalExpress)** if you need HTTPS).
-2. Before trusting Swagger UI, open the OpenAPI JSON directly:  
-   http://127.0.0.1:5288/swagger/v1/swagger.json  
+2. Before trusting the docs UI, open the OpenAPI JSON directly:  
+   http://127.0.0.1:5288/openapi/v1.json  
    The first key must be `"openapi"` (e.g. `"openapi": "3.0.4"`). If you see an `ApiResponse` error object, schema generation failed — check the console stack.
-3. Then open http://127.0.0.1:5288/swagger (or `https://localhost:7288/swagger` on the https profiles).  
-   Swagger UI uses a **relative** endpoint (`v1/swagger.json`) so it works under HTTPS / path-base.
+3. Then open http://127.0.0.1:5288/scalar (or `https://localhost:7288/scalar` / `https://localhost:5001/scalar` on HTTPS profiles).  
 4. If the browser opens the wrong host/port, stop debugging and confirm the active launch profile’s `applicationUrl`.
 
 ### Development login
@@ -163,5 +162,5 @@ npm start
 4. **CORS** — Restrict `Cors:AllowedOrigins` to your real Angular HTTPS origins only.
 5. **HTTPS** — Terminate TLS at reverse proxy or Kestrel; do not expose plain HTTP publicly.
 6. **FBR** — Set `Fiscal__BaseUrl` + `Fiscal__ApiKey` only in the production secret store; leave empty to keep mock (never for real fiscal compliance).
-7. **Health / Swagger** — Keep `/health` for probes; disable or protect Swagger in production if required by policy.
+7. **Health / API docs** — Keep `/health` for probes; disable or protect Scalar/OpenAPI in production if required by policy.
 8. **Database-first** — Apply DDL scripts from `database/`; do not enable EF migrations against production.

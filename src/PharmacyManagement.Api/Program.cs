@@ -8,6 +8,7 @@ using PharmacyManagement.Api.Middleware;
 using PharmacyManagement.Application;
 using PharmacyManagement.Application.Options;
 using PharmacyManagement.Infrastructure;
+using Scalar.AspNetCore;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -82,11 +83,13 @@ try
         {
             Title = "Pharmacy Management API",
             Version = "v1",
-            Description = "Phase 2E — Auth, Org, Products, Purchasing, Inventory, Sales, Cash, Customers, Prescriptions, Controlled, Fiscal (Database-First)"
+            Description = "Phase 2E - Auth, Org, Products, Purchasing, Inventory, Sales, Cash, Customers, Prescriptions, Controlled, Fiscal (Database-First)"
         });
-        // Avoid schemaId collisions (e.g. ApiResponse vs ApiResponse<T>, nested types).
-        c.CustomSchemaIds(type =>
-            (type.FullName ?? type.Name).Replace("+", ".", StringComparison.Ordinal));
+        // FullName avoids ApiResponse vs ApiResponse<T> collisions. Dots/backticks break
+        // Swagger UI's $ref resolver (UI then reports a bogus "missing version field" error).
+        c.CustomSchemaIds(static type => SanitizeSchemaId(type));
+        c.CustomOperationIds(api =>
+            $"{api.ActionDescriptor.RouteValues["controller"]}_{api.ActionDescriptor.RouteValues["action"]}_{api.HttpMethod}");
         c.IgnoreObsoleteActions();
         // DateOnly / TimeOnly map cleanly for Swagger UI under older Swashbuckle hosts.
         c.MapType<DateOnly>(() => new OpenApiSchema { Type = "string", Format = "date" });
@@ -116,15 +119,10 @@ try
 
     var app = builder.Build();
 
-    // Serve OpenAPI before exception JSON wrapping so schema-gen failures
-    // are not turned into non-OpenAPI ApiResponse payloads for Swagger UI.
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    // OpenAPI JSON via Swashbuckle; UI via Scalar (Swagger UI fails on this large dotted-schema doc).
+    app.UseSwagger(options =>
     {
-        // Relative URL so VS https://localhost:7xxx / path-base still resolve correctly.
-        c.SwaggerEndpoint("v1/swagger.json", "Pharmacy Management API v1");
-        c.RoutePrefix = "swagger";
-        c.EnableDeepLinking();
+        options.RouteTemplate = "/openapi/{documentName}.json";
     });
 
     app.UseMiddleware<ExceptionHandlingMiddleware>();
@@ -136,6 +134,12 @@ try
 
     app.MapControllers();
     app.MapHealthChecks("/health");
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .WithTitle("Pharmacy Management API")
+            .WithOpenApiRoutePattern("/openapi/{documentName}.json");
+    });
 
     app.Run();
 }
@@ -149,4 +153,18 @@ finally
     Log.CloseAndFlush();
 }
 
-public partial class Program;
+public partial class Program
+{
+    private static string SanitizeSchemaId(Type type)
+    {
+        var raw = type.FullName ?? type.Name;
+        return raw
+            .Replace('+', '.')
+            .Replace('.', '_')
+            .Replace('`', '_')
+            .Replace(',', '_')
+            .Replace('[', '_')
+            .Replace(']', '_')
+            .Replace(' ', '_');
+    }
+}

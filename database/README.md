@@ -19,6 +19,14 @@ cd database/scripts
 ./run_tests.sh          # wipe transactional data, re-seed, run 35 tests
 ```
 
+### Local demo sample data (products / stock / customers)
+
+After `19_seed_data.sql`, run once in SSMS or sqlcmd:
+
+`database/20_demo_sample_data.sql`
+
+Adds ~15 DEMO products, prices, barcodes, suppliers, customers, GRN stock batches, reorder rules. Safe to re-run. Then re-login as `admin` / `Admin@12345`.
+
 ## Layout
 
 ```text
