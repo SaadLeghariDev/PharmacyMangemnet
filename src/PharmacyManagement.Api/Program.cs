@@ -87,6 +87,12 @@ try
         // Avoid schemaId collisions (e.g. ApiResponse vs ApiResponse<T>, nested types).
         c.CustomSchemaIds(type =>
             (type.FullName ?? type.Name).Replace("+", ".", StringComparison.Ordinal));
+        c.IgnoreObsoleteActions();
+        // DateOnly / TimeOnly map cleanly for Swagger UI under older Swashbuckle hosts.
+        c.MapType<DateOnly>(() => new OpenApiSchema { Type = "string", Format = "date" });
+        c.MapType<DateOnly?>(() => new OpenApiSchema { Type = "string", Format = "date", Nullable = true });
+        c.MapType<TimeOnly>(() => new OpenApiSchema { Type = "string", Format = "time" });
+        c.MapType<TimeOnly?>(() => new OpenApiSchema { Type = "string", Format = "time", Nullable = true });
         c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
             Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
@@ -115,7 +121,10 @@ try
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Pharmacy Management API v1");
+        // Relative URL so VS https://localhost:7xxx / path-base still resolve correctly.
+        c.SwaggerEndpoint("v1/swagger.json", "Pharmacy Management API v1");
+        c.RoutePrefix = "swagger";
+        c.EnableDeepLinking();
     });
 
     app.UseMiddleware<ExceptionHandlingMiddleware>();

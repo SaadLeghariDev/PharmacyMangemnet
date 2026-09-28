@@ -63,10 +63,12 @@ dotnet run --project src/PharmacyManagement.Api --launch-profile PharmacyManagem
 
 ### Launch profiles
 
-| Profile | Use when | DB |
-|---------|----------|----|
-| `PharmacyManagement.Api` (default) | Docker SQL on `localhost,14333` | sa / `Your_strong_Password123` |
-| `LocalExpress` | Windows SQL Express (`DESKTOP-H9TF8EF\SQLEXPRESS`) | Trusted_Connection |
+| Profile | Use when | URL | DB |
+|---------|----------|-----|----|
+| `PharmacyManagement.Api` (default) | Docker SQL | `http://127.0.0.1:5288` | sa / `Your_strong_Password123` |
+| `LocalExpress` | Windows SQL Express | `http://127.0.0.1:5288` | Trusted_Connection |
+| `https` | VS default HTTPS | `https://localhost:7288` + `http://127.0.0.1:5288` | Docker SQL |
+| `https (LocalExpress)` | VS HTTPS + Express | same dual URL | Trusted_Connection |
 
 ```bash
 # Docker / default
@@ -76,8 +78,15 @@ dotnet run --project src/PharmacyManagement.Api --launch-profile PharmacyManagem
 dotnet run --project src/PharmacyManagement.Api --launch-profile LocalExpress
 ```
 
-In Visual Studio / Rider, pick the **LocalExpress** profile, then open http://127.0.0.1:5288/swagger.
-If Swagger UI shows “Unable to render this definition / does not specify a valid version field”, curl `/swagger/v1/swagger.json` — it must start with `"openapi"`, not an `ApiResponse` error payload.
+#### Visual Studio / Windows
+
+1. Select the **LocalExpress** profile (or **https (LocalExpress)** if you need HTTPS).
+2. Before trusting Swagger UI, open the OpenAPI JSON directly:  
+   http://127.0.0.1:5288/swagger/v1/swagger.json  
+   The first key must be `"openapi"` (e.g. `"openapi": "3.0.4"`). If you see an `ApiResponse` error object, schema generation failed — check the console stack.
+3. Then open http://127.0.0.1:5288/swagger (or `https://localhost:7288/swagger` on the https profiles).  
+   Swagger UI uses a **relative** endpoint (`v1/swagger.json`) so it works under HTTPS / path-base.
+4. If the browser opens the wrong host/port, stop debugging and confirm the active launch profile’s `applicationUrl`.
 
 ### Development login
 
