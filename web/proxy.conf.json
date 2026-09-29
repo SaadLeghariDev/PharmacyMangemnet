@@ -1,12 +1,12 @@
 {
   "/api": {
-    "target": "https://localhost:44385",
+    "target": "http://pharmacycare.runasp.net",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "silent"
   },
   "/health": {
-    "target": "https://localhost:44385",
+    "target": "http://pharmacycare.runasp.net",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "silent"

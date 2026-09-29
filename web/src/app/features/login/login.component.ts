@@ -34,24 +34,17 @@ export class LoginComponent {
     this.auth.login({ username: this.username.trim(), password: this.password }).subscribe({
       next: () => {
         this.busy.set(false);
-        void this.goHome();
+        void this.router.navigateByUrl('/dashboard', { replaceUrl: true }).then((ok) => {
+          if (!ok) {
+            void this.router.navigate(['/dashboard'], { replaceUrl: true });
+          }
+        });
       },
       error: (err: unknown) => {
         this.busy.set(false);
         this.error.set(this.readError(err));
       },
     });
-  }
-
-  private async goHome(): Promise<void> {
-    try {
-      const ok = await this.router.navigateByUrl('/dashboard', { replaceUrl: true });
-      if (!ok) {
-        window.location.assign('/dashboard');
-      }
-    } catch {
-      window.location.assign('/dashboard');
-    }
   }
 
   private readError(err: unknown): string {

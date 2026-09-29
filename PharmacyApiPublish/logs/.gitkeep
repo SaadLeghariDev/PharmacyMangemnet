@@ -1,0 +1,3 @@
+# ASP.NET Core Module writes stdout_*.log here when the app crashes/starts.
+# This folder MUST exist on the host — IIS will not create it automatically.
+# Keep this placeholder file so `logs/` is included in publish output.

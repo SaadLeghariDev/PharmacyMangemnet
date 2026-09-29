@@ -19,10 +19,13 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    // Optional Local SQL Express overrides (file may be absent). Re-add env vars so
-    // launch profiles (Docker vs LocalExpress) still win over the JSON file.
-    builder.Configuration.AddJsonFile("appsettings.LocalExpress.json", optional: true, reloadOnChange: true);
-    builder.Configuration.AddEnvironmentVariables();
+    // Local SQL Express overrides — Development only (never on MonsterASP / Production).
+    if (builder.Environment.IsDevelopment())
+    {
+        builder.Configuration.AddJsonFile("appsettings.LocalExpress.json", optional: true, reloadOnChange: true);
+        // Re-apply env vars so launch profiles still win over the JSON file.
+        builder.Configuration.AddEnvironmentVariables();
+    }
 
     builder.Host.UseSerilog((ctx, services, cfg) => cfg
         .ReadFrom.Configuration(ctx.Configuration)
@@ -132,6 +135,10 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
+    // Serve Angular SPA from wwwroot (production publish to medistock.tryasp.net).
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+
     app.MapControllers();
     app.MapHealthChecks("/health");
     app.MapScalarApiReference(options =>
@@ -140,6 +147,9 @@ try
             .WithTitle("Pharmacy Management API")
             .WithOpenApiRoutePattern("/openapi/{documentName}.json");
     });
+
+    // Angular client-side routes (exclude API / docs / health).
+    app.MapFallbackToFile("index.html");
 
     app.Run();
 }

@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'http://127.0.0.1:5339',
+  /** Published API on runasp.net */
+  apiBaseUrl: 'http://pharmacycare.runasp.net',
   defaultCashPaymentMethodId: 1,
 };

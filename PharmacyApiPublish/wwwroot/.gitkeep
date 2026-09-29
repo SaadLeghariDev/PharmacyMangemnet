@@ -1,0 +1,3 @@
+# Placeholder so wwwroot exists before first Angular production build.
+# Production: from web/ run  npm run build
+# Output goes to this folder (see angular.json production outputPath).

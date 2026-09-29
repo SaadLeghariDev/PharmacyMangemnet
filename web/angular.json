@@ -55,6 +55,10 @@
                 }
               ],
               "outputHashing": "all",
+              "outputPath": {
+                "base": "../src/PharmacyManagement.Api/wwwroot",
+                "browser": ""
+              },
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

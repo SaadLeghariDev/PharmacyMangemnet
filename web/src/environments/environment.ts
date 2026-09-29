@@ -1,5 +1,5 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'https://localhost:7288',
+  apiBaseUrl: 'http://pharmacycare.runasp.net',
   defaultCashPaymentMethodId: 1,
 };

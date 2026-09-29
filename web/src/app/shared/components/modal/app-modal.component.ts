@@ -52,6 +52,7 @@ import { CommonModule } from '@angular/common';
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow-md);
         animation: rise 0.15s ease;
+        overflow: visible;
       }
       .dialog.sm {
         width: min(400px, 100%);
@@ -80,6 +81,7 @@ import { CommonModule } from '@angular/common';
       }
       .body {
         padding: 1rem;
+        overflow: visible;
       }
       footer {
         display: flex;

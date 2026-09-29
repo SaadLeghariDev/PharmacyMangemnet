@@ -4,7 +4,15 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AspNetCoreHostingModel>OutOfProcess</AspNetCoreHostingModel>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Never deploy local Express overrides to MonsterASP / any publish output. -->
+    <Content Update="appsettings.LocalExpress.json" CopyToPublishDirectory="Never" />
+    <!-- Ensure empty logs/ folder is published (stdout logging needs the directory). -->
+    <Content Include="logs\.gitkeep" CopyToPublishDirectory="PreserveNewest" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="8.0.2" />
