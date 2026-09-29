@@ -90,7 +90,8 @@ export interface AppTableColumn {
       }
       th.actions {
         text-align: right;
-        width: 7rem;
+        width: 1%;
+        white-space: nowrap;
       }
       :host ::ng-deep tbody td {
         padding: 0.7rem 0.75rem;

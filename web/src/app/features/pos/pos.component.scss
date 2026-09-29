@@ -95,6 +95,19 @@
   z-index: 20;
 }
 
+.search-block ::ng-deep .ta-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.search-block ::ng-deep .ta-input {
+  height: 44px;
+  font-size: 1rem;
+}
+
 .search-label {
   display: block;
   font-size: 0.75rem;

@@ -11,4 +11,6 @@ export { AppConfirmDialogComponent } from './components/confirm-dialog/app-confi
 export { AppPageHeaderComponent } from './components/page-header/app-page-header.component';
 export { AppEmptyStateComponent } from './components/empty-state/app-empty-state.component';
 export { AppLoadingStateComponent } from './components/loading-state/app-loading-state.component';
+export { AppTypeaheadComponent } from './components/typeahead/app-typeahead.component';
+export type { AppTypeaheadItem } from './components/typeahead/app-typeahead.component';
 export { SnackbarService } from './services/snackbar.service';

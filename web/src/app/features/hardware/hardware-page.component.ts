@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { map, Observable } from 'rxjs';
 import { PharmacyApiService } from '../../core/services/pharmacy-api.service';
 import {
   AttachmentDto,
@@ -23,6 +24,8 @@ import {
   AppSelectOption,
   AppTableColumn,
   AppTableComponent,
+  AppTypeaheadComponent,
+  AppTypeaheadItem,
   SnackbarService,
 } from '../../shared';
 
@@ -40,6 +43,7 @@ import {
     AppEmptyStateComponent,
     AppLoadingStateComponent,
     AppModalComponent,
+    AppTypeaheadComponent,
     AppBadgeComponent,
   ],
   templateUrl: './hardware-page.component.html',
@@ -487,6 +491,24 @@ export class HardwarePageComponent implements OnInit {
     if (status === 'Queued' || status === 'Printing') return 'info';
     if (status === 'Failed' || status === 'Cancelled') return 'danger';
     return 'neutral';
+  }
+
+  productSuggestFn = (q: string): Observable<AppTypeaheadItem<ProductDto>[]> =>
+    this.api.searchProducts(q, 20).pipe(
+      map((rows) =>
+        rows.map((p) => ({
+          id: p.id,
+          label: p.name,
+          detail: p.sku,
+          data: p,
+        })),
+      ),
+    );
+
+  onJobProductPick(item: AppTypeaheadItem<ProductDto>): void {
+    this.jobForm.productId = Number(item.id);
+    this.jobForm.productSearch = `${item.detail || ''} — ${item.label}`.replace(/^ — /, '');
+    this.productOptions = [{ value: item.id, label: `${item.detail} — ${item.label}` }];
   }
 
   productSearch(term: string): void {

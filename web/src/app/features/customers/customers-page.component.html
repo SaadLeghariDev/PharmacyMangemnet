@@ -3,7 +3,14 @@
 </app-page-header>
 
 <div class="toolbar">
-  <app-input label="Search" placeholder="Code, name, phone…" [(ngModel)]="search" (inputKeydown)="$event.key === 'Enter' && applyFilters()" />
+  <app-typeahead
+    label="Search"
+    placeholder="Code, name, phone…"
+    [(ngModel)]="search"
+    [searchFn]="customerSuggestFn"
+    (selected)="onCustomerSuggest($event)"
+    (submitted)="onSearchSubmit($event)"
+  />
   <app-select label="Status" [options]="statusOptions" [(ngModel)]="statusFilter" />
   <div class="toolbar-actions">
     <app-button variant="secondary" (clicked)="applyFilters()" [loading]="loading()">Apply</app-button>

@@ -1,13 +1,14 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, map, Observable } from 'rxjs';
 import { PharmacyApiService } from '../../core/services/pharmacy-api.service';
 import {
   BranchDto,
   CreateGoodsReceiptRequest,
   CreatePurchaseOrderRequest,
   GoodsReceiptDto,
+  ProductDto,
   PurchaseOrderDto,
   SupplierDto,
   WarehouseDto,
@@ -25,6 +26,8 @@ import {
   AppSelectOption,
   AppTableColumn,
   AppTableComponent,
+  AppTypeaheadComponent,
+  AppTypeaheadItem,
   SnackbarService,
 } from '../../shared';
 import { AppBadgeTone } from '../../shared/components/badge/app-badge.component';
@@ -47,6 +50,7 @@ type PurchasesTab = 'po' | 'grn';
     AppLoadingStateComponent,
     AppModalComponent,
     AppBadgeComponent,
+    AppTypeaheadComponent,
   ],
   templateUrl: './purchases-page.component.html',
   styleUrl: './purchases-page.component.scss',
@@ -95,6 +99,7 @@ export class PurchasesPageComponent implements OnInit {
   poWarehouseId: string | number = '';
   poSupplierId: string | number = '';
   poProductId: number | null = null;
+  poProductLabel = '';
   poProductUnitId: number | null = null;
   poQty: number | null = null;
   poUnitPrice: number | null = null;
@@ -103,6 +108,7 @@ export class PurchasesPageComponent implements OnInit {
   grnWarehouseId: string | number = '';
   grnSupplierId: string | number = '';
   grnProductId: number | null = null;
+  grnProductLabel = '';
   grnProductUnitId: number | null = null;
   grnQty: number | null = null;
   grnUnitCost: number | null = null;
@@ -127,6 +133,28 @@ export class PurchasesPageComponent implements OnInit {
   readonly locationOptions = computed<AppSelectOption[]>(() =>
     this.locations().map((l) => ({ value: l.id, label: `${l.code} — ${l.name}` })),
   );
+
+  readonly productSuggestFn = (q: string): Observable<AppTypeaheadItem<ProductDto>[]> =>
+    this.api.searchProducts(q, 8).pipe(
+      map((items) =>
+        items.map((p) => ({
+          id: p.id,
+          label: p.name,
+          detail: p.sku,
+          data: p,
+        })),
+      ),
+    );
+
+  onPoProductPick(item: AppTypeaheadItem<ProductDto>): void {
+    this.poProductId = Number(item.id);
+    this.poProductLabel = `${item.label} (${item.detail || item.id})`;
+  }
+
+  onGrnProductPick(item: AppTypeaheadItem<ProductDto>): void {
+    this.grnProductId = Number(item.id);
+    this.grnProductLabel = `${item.label} (${item.detail || item.id})`;
+  }
 
   readonly statusOptions: AppSelectOption[] = [
     { value: '', label: 'All statuses' },
@@ -216,6 +244,8 @@ export class PurchasesPageComponent implements OnInit {
 
   openPoCreate(): void {
     this.formErrors = {};
+    this.poProductId = null;
+    this.poProductLabel = '';
     this.poModalOpen.set(true);
   }
 
@@ -228,7 +258,7 @@ export class PurchasesPageComponent implements OnInit {
     if (!this.poBranchId) this.formErrors['branch'] = 'Branch required.';
     if (!this.poWarehouseId) this.formErrors['warehouse'] = 'Warehouse required.';
     if (!this.poSupplierId) this.formErrors['supplier'] = 'Supplier required.';
-    if (this.poProductId == null) this.formErrors['product'] = 'Product ID required.';
+    if (this.poProductId == null) this.formErrors['product'] = 'Select a product.';
     if (this.poProductUnitId == null) this.formErrors['unit'] = 'Product unit ID required.';
     if (this.poQty == null || this.poQty <= 0) this.formErrors['qty'] = 'Quantity required.';
     if (this.poUnitPrice == null || this.poUnitPrice < 0) this.formErrors['price'] = 'Unit price required.';
@@ -284,6 +314,8 @@ export class PurchasesPageComponent implements OnInit {
 
   openGrnCreate(): void {
     this.formErrors = {};
+    this.grnProductId = null;
+    this.grnProductLabel = '';
     this.refreshLocations();
     this.grnModalOpen.set(true);
   }
@@ -312,7 +344,7 @@ export class PurchasesPageComponent implements OnInit {
     if (!this.grnBranchId) this.formErrors['branch'] = 'Branch required.';
     if (!this.grnWarehouseId) this.formErrors['warehouse'] = 'Warehouse required.';
     if (!this.grnSupplierId) this.formErrors['supplier'] = 'Supplier required.';
-    if (this.grnProductId == null) this.formErrors['product'] = 'Product ID required.';
+    if (this.grnProductId == null) this.formErrors['product'] = 'Select a product.';
     if (this.grnProductUnitId == null) this.formErrors['unit'] = 'Product unit ID required.';
     if (this.grnQty == null || this.grnQty <= 0) this.formErrors['qty'] = 'Quantity required.';
     if (this.grnUnitCost == null) this.formErrors['cost'] = 'Unit cost required.';

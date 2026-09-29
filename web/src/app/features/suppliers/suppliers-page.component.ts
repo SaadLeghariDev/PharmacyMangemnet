@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { map, Observable } from 'rxjs';
 import { PharmacyApiService } from '../../core/services/pharmacy-api.service';
 import { CreateSupplierRequest, SupplierDto } from '../../core/models/api.models';
 import {
@@ -14,6 +15,8 @@ import {
   AppPageHeaderComponent,
   AppTableColumn,
   AppTableComponent,
+  AppTypeaheadComponent,
+  AppTypeaheadItem,
   SnackbarService,
 } from '../../shared';
 
@@ -32,6 +35,7 @@ import {
     AppLoadingStateComponent,
     AppModalComponent,
     AppBadgeComponent,
+    AppTypeaheadComponent,
   ],
   templateUrl: './suppliers-page.component.html',
   styleUrl: './suppliers-page.component.scss',
@@ -60,6 +64,18 @@ export class SuppliersPageComponent implements OnInit {
   createTermsDays: number | null = 30;
   createCreditLimit: number | null = 0;
 
+  readonly supplierSuggestFn = (q: string): Observable<AppTypeaheadItem<SupplierDto>[]> =>
+    this.api.searchSuppliers(q, 8).pipe(
+      map((items) =>
+        items.map((s) => ({
+          id: s.id,
+          label: s.name,
+          detail: [s.code, s.phone].filter(Boolean).join(' · '),
+          data: s,
+        })),
+      ),
+    );
+
   constructor(
     private readonly api: PharmacyApiService,
     private readonly snackbar: SnackbarService,
@@ -85,6 +101,16 @@ export class SuppliersPageComponent implements OnInit {
         this.snackbar.error(message);
       },
     });
+  }
+
+  onSupplierSuggest(item: AppTypeaheadItem<SupplierDto>): void {
+    this.search = item.data?.code || item.label;
+    this.load();
+  }
+
+  onSearchSubmit(q: string): void {
+    this.search = q;
+    this.load();
   }
 
   openCreate(): void {

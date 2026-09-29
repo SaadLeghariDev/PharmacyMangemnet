@@ -1,9 +1,11 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { map, Observable } from 'rxjs';
 import { PharmacyApiService } from '../../core/services/pharmacy-api.service';
 import {
   FefoCandidateDto,
+  ProductDto,
   StockBalanceDto,
   WarehouseDto,
 } from '../../core/models/api.models';
@@ -17,6 +19,8 @@ import {
   AppSelectOption,
   AppTableColumn,
   AppTableComponent,
+  AppTypeaheadComponent,
+  AppTypeaheadItem,
   SnackbarService,
 } from '../../shared';
 
@@ -36,6 +40,7 @@ type InventoryTab = 'stock' | 'near-expiry' | 'fefo';
     AppTableComponent,
     AppEmptyStateComponent,
     AppLoadingStateComponent,
+    AppTypeaheadComponent,
   ],
   templateUrl: './inventory-page.component.html',
   styleUrl: './inventory-page.component.scss',
@@ -64,6 +69,7 @@ export class InventoryPageComponent implements OnInit {
   warehouseFilter: string | number = '';
   daysAhead = 90;
   fefoProductId: number | null = null;
+  fefoProductLabel = '';
   fefoWarehouseId: number | null = null;
   fefoQty = 1;
 
@@ -81,6 +87,23 @@ export class InventoryPageComponent implements OnInit {
     { value: '', label: 'All warehouses' },
     ...this.warehouses().map((w) => ({ value: w.id, label: `${w.code} — ${w.name}` })),
   ]);
+
+  readonly productSuggestFn = (q: string): Observable<AppTypeaheadItem<ProductDto>[]> =>
+    this.api.searchProducts(q, 8).pipe(
+      map((items) =>
+        items.map((p) => ({
+          id: p.id,
+          label: p.name,
+          detail: p.sku,
+          data: p,
+        })),
+      ),
+    );
+
+  onFefoProductPick(item: AppTypeaheadItem<ProductDto>): void {
+    this.fefoProductId = Number(item.id);
+    this.fefoProductLabel = `${item.label} (${item.detail || item.id})`;
+  }
 
   constructor(
     private readonly api: PharmacyApiService,
@@ -154,7 +177,7 @@ export class InventoryPageComponent implements OnInit {
 
   runFefo(): void {
     if (this.fefoProductId == null || this.fefoWarehouseId == null) {
-      this.snackbar.error('Product ID and warehouse ID are required for FEFO.');
+      this.snackbar.error('Select a product and enter warehouse ID for FEFO.');
       return;
     }
     this.loading.set(true);

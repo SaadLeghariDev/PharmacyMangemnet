@@ -3,11 +3,13 @@
 </app-page-header>
 
 <div class="toolbar">
-  <app-input
+  <app-typeahead
     label="Search"
     placeholder="Name, SKU, generic…"
     [(ngModel)]="search"
-    (inputKeydown)="$event.key === 'Enter' && applyFilters()"
+    [searchFn]="productSuggestFn"
+    (selected)="onProductSuggest($event)"
+    (submitted)="onSearchSubmit($event)"
   />
   <app-select label="Status" [options]="statusOptions" [(ngModel)]="statusFilter" />
   <div class="toolbar-actions">
@@ -54,7 +56,7 @@
             {{ row.isActive ? 'Active' : 'Inactive' }}
           </app-badge>
         </td>
-        <td>
+        <td class="actions-cell">
           <div class="row-actions">
             <app-button variant="ghost" size="sm" (clicked)="openEdit(row)">Edit</app-button>
             @if (row.isActive) {

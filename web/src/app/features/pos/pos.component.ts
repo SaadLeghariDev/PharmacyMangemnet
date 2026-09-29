@@ -1,8 +1,6 @@
 import {
   Component,
-  ElementRef,
   HostListener,
-  OnDestroy,
   OnInit,
   ViewChild,
   computed,
@@ -11,10 +9,7 @@ import {
 import { CommonModule, CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  Subject,
-  Subscription,
-  debounceTime,
-  distinctUntilChanged,
+  Observable,
   forkJoin,
   of,
   switchMap,
@@ -39,6 +34,8 @@ import {
   AppInputComponent,
   AppLoadingStateComponent,
   AppModalComponent,
+  AppTypeaheadComponent,
+  AppTypeaheadItem,
   SnackbarService,
 } from '../../shared';
 
@@ -53,12 +50,6 @@ interface PosContext {
 }
 
 type PayMethod = 1 | 2 | 3;
-
-interface ProductSuggestion {
-  product: ProductDto;
-  salePrice: number | null;
-  availableQuantity: number | null;
-}
 
 @Component({
   selector: 'app-pos',
@@ -76,12 +67,13 @@ interface ProductSuggestion {
     AppLoadingStateComponent,
     AppConfirmDialogComponent,
     AppModalComponent,
+    AppTypeaheadComponent,
   ],
   templateUrl: './pos.component.html',
   styleUrl: './pos.component.scss',
 })
-export class PosComponent implements OnInit, OnDestroy {
-  @ViewChild('searchBox') searchBox?: ElementRef<HTMLInputElement>;
+export class PosComponent implements OnInit {
+  @ViewChild('productTypeahead') productTypeahead?: AppTypeaheadComponent<ProductDto>;
 
   search = '';
   customerSearch = '';
@@ -95,12 +87,6 @@ export class PosComponent implements OnInit, OnDestroy {
   readonly context = signal<PosContext | null>(null);
   readonly contextError = signal('');
   readonly lines = signal<CartLine[]>([]);
-  readonly suggestions = signal<ProductSuggestion[]>([]);
-  readonly suggestOpen = signal(false);
-  readonly suggestLoading = signal(false);
-  readonly suggestEmpty = signal(false);
-  readonly highlightIndex = signal(0);
-  readonly customerSuggestions = signal<CustomerDto[]>([]);
   readonly selectedCustomer = signal<CustomerDto | null>(null);
   readonly receiptCustomerPhone = signal<string | null>(null);
   readonly heldSales = signal<HeldSaleDto[]>([]);
@@ -128,10 +114,6 @@ export class PosComponent implements OnInit, OnDestroy {
       .filter(Boolean);
     return [...new Set(names)].join(' · ') || '—';
   });
-
-  private readonly search$ = new Subject<string>();
-  private searchSub?: Subscription;
-  private enrichSub?: Subscription;
 
   readonly itemCount = computed(() =>
     this.lines().reduce((n, l) => n + l.quantity, 0),
@@ -175,6 +157,53 @@ export class PosComponent implements OnInit, OnDestroy {
     return Math.round((this.payable() - cash - card) * 100) / 100;
   });
 
+  readonly productSuggestFn = (q: string): Observable<AppTypeaheadItem<ProductDto>[]> => {
+    const ctx = this.context();
+    return this.api.searchProducts(q, 12).pipe(
+      map((items) => items.filter((p) => p.isSaleable && p.isActive).slice(0, 8)),
+      switchMap((items) => {
+        if (!items.length) return of([]);
+        if (!ctx) {
+          return of(items.map((p) => this.toProductItem(p, null, null)));
+        }
+        return forkJoin(
+          items.map((p) =>
+            this.api.getFefo(p.id, ctx.warehouseId, 1).pipe(
+              map((cands) =>
+                this.toProductItem(
+                  p,
+                  cands[0]?.salePrice ?? null,
+                  cands[0]?.availableQuantity ?? 0,
+                ),
+              ),
+              catchError(() => of(this.toProductItem(p, null, 0))),
+            ),
+          ),
+        );
+      }),
+      catchError(() => {
+        this.snackbar.error('Product search failed.');
+        return of([]);
+      }),
+    );
+  };
+
+  readonly customerSuggestFn = (q: string): Observable<AppTypeaheadItem<CustomerDto>[]> =>
+    this.api.searchCustomers({ page: 1, pageSize: 8, search: q, isActive: true }).pipe(
+      map((res) =>
+        res.items.map((c) => ({
+          id: c.id,
+          label: c.name,
+          detail: [c.customerCode, c.phone].filter(Boolean).join(' · '),
+          data: c,
+        })),
+      ),
+      catchError(() => {
+        this.snackbar.error('Customer search failed.');
+        return of([]);
+      }),
+    );
+
   constructor(
     private readonly api: PharmacyApiService,
     private readonly snackbar: SnackbarService,
@@ -182,37 +211,6 @@ export class PosComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.bootstrapContext();
-    this.searchSub = this.search$
-      .pipe(
-        debounceTime(250),
-        distinctUntilChanged(),
-        switchMap((term) => {
-          const q = term.trim();
-          if (q.length < 2) {
-            this.clearSuggestions();
-            return of(null);
-          }
-          this.suggestLoading.set(true);
-          this.suggestEmpty.set(false);
-          return this.api.searchProducts(q, 12).pipe(
-            map((items) => items.filter((p) => p.isSaleable && p.isActive).slice(0, 8)),
-            catchError(() => {
-              this.suggestLoading.set(false);
-              this.snackbar.error('Product search failed.');
-              return of([] as ProductDto[]);
-            }),
-          );
-        }),
-      )
-      .subscribe((items) => {
-        if (items == null) return;
-        this.applySuggestions(items);
-      });
-  }
-
-  ngOnDestroy(): void {
-    this.searchSub?.unsubscribe();
-    this.enrichSub?.unsubscribe();
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -236,26 +234,42 @@ export class PosComponent implements OnInit, OnDestroy {
       this.completeSale();
       return;
     }
-    if (event.key === 'Escape') {
-      if (this.suggestOpen()) {
-        event.preventDefault();
-        this.clearSuggestions();
-        return;
-      }
-      if (this.lines().length) {
-        event.preventDefault();
-        this.askClear();
-      }
+    if (event.key === 'Escape' && this.lines().length) {
+      event.preventDefault();
+      this.askClear();
     }
   }
 
   focusSearch(): void {
-    setTimeout(() => this.searchBox?.nativeElement?.focus(), 0);
+    this.productTypeahead?.focus();
   }
 
-  onSearchInput(value: string): void {
-    this.search = value;
-    this.search$.next(value);
+  private toProductItem(
+    p: ProductDto,
+    salePrice: number | null,
+    availableQuantity: number | null,
+  ): AppTypeaheadItem<ProductDto> {
+    const detailBits = [this.productDetailLine(p), p.sku].filter(Boolean);
+    let badge: string | undefined;
+    let badgeTone: 'ok' | 'warn' | 'muted' | undefined;
+    if (availableQuantity == null) {
+      badge = undefined;
+    } else if (availableQuantity <= 0) {
+      badge = 'No stock';
+      badgeTone = 'warn';
+    } else {
+      badge = `Qty ${availableQuantity}`;
+      badgeTone = 'ok';
+    }
+    return {
+      id: p.id,
+      label: p.name,
+      detail: detailBits.join(' · '),
+      trailing: salePrice != null ? `PKR ${salePrice.toFixed(2)}` : '—',
+      badge,
+      badgeTone,
+      data: p,
+    };
   }
 
   productDetailLine(p: ProductDto): string {
@@ -268,82 +282,29 @@ export class PosComponent implements OnInit, OnDestroy {
     return bits.join(' · ');
   }
 
-  highlightName(name: string): string {
-    const q = this.search.trim();
-    if (!q) return this.escapeHtml(name);
-    const idx = name.toLowerCase().indexOf(q.toLowerCase());
-    if (idx < 0) return this.escapeHtml(name);
-    const before = this.escapeHtml(name.slice(0, idx));
-    const match = this.escapeHtml(name.slice(idx, idx + q.length));
-    const after = this.escapeHtml(name.slice(idx + q.length));
-    return `${before}<mark>${match}</mark>${after}`;
+  onProductTypeaheadPick(item: AppTypeaheadItem<ProductDto>): void {
+    if (item.data) this.pickSuggestion(item.data);
   }
 
-  private escapeHtml(s: string): string {
-    return s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+  onProductTypeaheadSubmit(q: string): void {
+    this.search = q;
+    this.resolveSearch();
   }
 
-  private clearSuggestions(): void {
-    this.suggestions.set([]);
-    this.suggestOpen.set(false);
-    this.suggestEmpty.set(false);
-    this.suggestLoading.set(false);
-    this.highlightIndex.set(0);
-    this.enrichSub?.unsubscribe();
+  onCustomerTypeaheadPick(item: AppTypeaheadItem<CustomerDto>): void {
+    if (item.data) this.pickCustomer(item.data);
   }
 
-  private applySuggestions(items: ProductDto[]): void {
-    this.suggestLoading.set(false);
-    if (!items.length) {
-      this.suggestions.set([]);
-      this.suggestEmpty.set(true);
-      this.suggestOpen.set(true);
-      this.highlightIndex.set(0);
-      return;
-    }
-    this.suggestEmpty.set(false);
-    const base: ProductSuggestion[] = items.map((product) => ({
-      product,
-      salePrice: null,
-      availableQuantity: null,
-    }));
-    this.suggestions.set(base);
-    this.suggestOpen.set(true);
-    this.highlightIndex.set(0);
-    this.enrichSuggestions(items);
-  }
-
-  private enrichSuggestions(items: ProductDto[]): void {
-    const ctx = this.context();
-    if (!ctx || !items.length) return;
-    this.enrichSub?.unsubscribe();
-    const calls = items.map((p) =>
-      this.api.getFefo(p.id, ctx.warehouseId, 1).pipe(
-        map((cands) => ({
-          id: p.id,
-          salePrice: cands[0]?.salePrice ?? null,
-          // First FEFO candidate qty; 0 when no stock so UI shows "No stock" (null = still loading)
-          availableQuantity: cands[0]?.availableQuantity ?? 0,
-        })),
-        catchError(() =>
-          of({ id: p.id, salePrice: null as number | null, availableQuantity: 0 }),
-        ),
-      ),
-    );
-    this.enrichSub = forkJoin(calls).subscribe((rows) => {
-      const mapById = new Map(rows.map((r) => [r.id, r]));
-      this.suggestions.update((list) =>
-        list.map((s) => {
-          const hit = mapById.get(s.product.id);
-          return hit
-            ? { ...s, salePrice: hit.salePrice, availableQuantity: hit.availableQuantity }
-            : s;
-        }),
-      );
+  onCustomerTypeaheadSubmit(q: string): void {
+    this.customerSearch = q;
+    if (!q.trim()) return;
+    this.api.searchCustomers({ page: 1, pageSize: 8, search: q, isActive: true }).subscribe({
+      next: (res) => {
+        if (res.items.length === 1) this.pickCustomer(res.items[0]);
+        else if (!res.items.length) this.snackbar.warning('No customers found.');
+        else this.snackbar.info('Select a customer from the suggestions.');
+      },
+      error: (err: unknown) => this.snackbar.error(this.errText(err)),
     });
   }
 
@@ -457,34 +418,13 @@ export class PosComponent implements OnInit, OnDestroy {
     this.cardPay.set(v === '' || v == null ? null : Number(v));
   }
 
-  onCustomerSearchKey(event: KeyboardEvent): void {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      this.searchCustomers();
-    }
-  }
-
-  searchCustomers(): void {
-    const term = this.customerSearch.trim();
-    if (!term) {
-      this.customerSuggestions.set([]);
-      return;
-    }
-    this.api.searchCustomers({ page: 1, pageSize: 8, search: term, isActive: true }).subscribe({
-      next: (res) => this.customerSuggestions.set(res.items),
-      error: (err: unknown) => this.snackbar.error(this.errText(err)),
-    });
-  }
-
   pickCustomer(customer: CustomerDto): void {
     this.selectedCustomer.set(customer);
     this.customerSearch = '';
-    this.customerSuggestions.set([]);
   }
 
   clearCustomer(): void {
     this.selectedCustomer.set(null);
-    this.customerSuggestions.set([]);
   }
 
   openCreateCustomer(): void {
@@ -537,42 +477,10 @@ export class PosComponent implements OnInit, OnDestroy {
     this.focusSearch();
   }
 
-  onSearchKey(event: KeyboardEvent): void {
-    const list = this.suggestions();
-    const open = this.suggestOpen();
-
-    if (event.key === 'ArrowDown' && open && list.length) {
-      event.preventDefault();
-      this.highlightIndex.set(Math.min(list.length - 1, this.highlightIndex() + 1));
-      return;
-    }
-    if (event.key === 'ArrowUp' && open && list.length) {
-      event.preventDefault();
-      this.highlightIndex.set(Math.max(0, this.highlightIndex() - 1));
-      return;
-    }
-    if (event.key === 'Escape' && open) {
-      event.preventDefault();
-      this.clearSuggestions();
-      return;
-    }
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      if (open && list.length) {
-        const idx = this.highlightIndex();
-        const hit = list[idx] ?? list[0];
-        if (hit) this.pickSuggestion(hit.product);
-        return;
-      }
-      this.resolveSearch();
-    }
-  }
-
   resolveSearch(): void {
     const term = this.search.trim();
     if (!term || !this.context()) return;
     this.busy.set(true);
-    this.clearSuggestions();
 
     this.api.getProductByBarcode(term).subscribe({
       next: (hit) => {
@@ -608,11 +516,9 @@ export class PosComponent implements OnInit, OnDestroy {
                   this.search = '';
                   this.focusSearch();
                 } else if (!saleable.length) {
-                  this.suggestEmpty.set(true);
-                  this.suggestOpen.set(true);
-                  this.suggestions.set([]);
+                  this.snackbar.warning('No products found.');
                 } else {
-                  this.applySuggestions(saleable.slice(0, 8));
+                  this.snackbar.info('Multiple matches — pick one from the suggestions.');
                 }
               },
               error: (err: unknown) => {
@@ -628,7 +534,6 @@ export class PosComponent implements OnInit, OnDestroy {
 
   pickSuggestion(product: ProductDto): void {
     this.addProduct(product);
-    this.clearSuggestions();
     this.search = '';
     this.focusSearch();
   }
@@ -740,7 +645,6 @@ export class PosComponent implements OnInit, OnDestroy {
     this.activeHoldId.set(null);
     this.selectedCustomer.set(null);
     this.customerSearch = '';
-    this.customerSuggestions.set([]);
     this.confirmClear.set(false);
     this.focusSearch();
   }
@@ -905,7 +809,6 @@ export class PosComponent implements OnInit, OnDestroy {
     this.splitEnabled.set(false);
     this.selectedCustomer.set(null);
     this.customerSearch = '';
-    this.clearSuggestions();
     this.busy.set(false);
     this.snackbar.success(`Sale complete — ${receipt.sale.invoiceNumber}`);
     this.refreshHolds();

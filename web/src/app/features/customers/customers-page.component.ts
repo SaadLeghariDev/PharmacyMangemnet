@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { map, Observable } from 'rxjs';
 import { PharmacyApiService } from '../../core/services/pharmacy-api.service';
 import { CreateCustomerRequest, CustomerDto } from '../../core/models/api.models';
 import {
@@ -16,6 +17,8 @@ import {
   AppSelectOption,
   AppTableColumn,
   AppTableComponent,
+  AppTypeaheadComponent,
+  AppTypeaheadItem,
   SnackbarService,
 } from '../../shared';
 
@@ -36,6 +39,7 @@ import {
     AppLoadingStateComponent,
     AppModalComponent,
     AppBadgeComponent,
+    AppTypeaheadComponent,
   ],
   templateUrl: './customers-page.component.html',
   styleUrl: './customers-page.component.scss',
@@ -74,6 +78,18 @@ export class CustomersPageComponent implements OnInit {
   createCreditLimit: number | null = 0;
   createIsPatient = false;
 
+  readonly customerSuggestFn = (q: string): Observable<AppTypeaheadItem<CustomerDto>[]> =>
+    this.api.searchCustomers({ search: q, pageSize: 8 }).pipe(
+      map((r) =>
+        r.items.map((c) => ({
+          id: c.id,
+          label: c.name,
+          detail: [c.customerCode, c.phone].filter(Boolean).join(' · '),
+          data: c,
+        })),
+      ),
+    );
+
   constructor(
     private readonly api: PharmacyApiService,
     private readonly snackbar: SnackbarService,
@@ -106,6 +122,16 @@ export class CustomersPageComponent implements OnInit {
 
   applyFilters(): void {
     this.load(1);
+  }
+
+  onCustomerSuggest(item: AppTypeaheadItem<CustomerDto>): void {
+    this.search = item.data?.customerCode || item.label;
+    this.applyFilters();
+  }
+
+  onSearchSubmit(q: string): void {
+    this.search = q;
+    this.applyFilters();
   }
 
   openCreate(): void {

@@ -41,79 +41,25 @@
     <div class="pos-body">
       <section class="cart-col">
         <div class="search-block">
-          <label class="search-label" for="pos-search">Barcode / medicine</label>
-          <div class="search-row">
-            <input
-              #searchBox
-              id="pos-search"
-              class="pos-search-input"
-              type="text"
-              [ngModel]="search"
-              (ngModelChange)="onSearchInput($event)"
-              (keydown)="onSearchKey($event)"
-              [disabled]="busy()"
-              placeholder="Type medicine name or scan barcode…"
-              autocomplete="off"
-              role="combobox"
-              [attr.aria-expanded]="suggestOpen()"
-              aria-autocomplete="list"
-              aria-controls="pos-suggest-list"
-            />
-            <app-button (clicked)="resolveSearch()" [disabled]="busy() || !search.trim()" [loading]="busy()"
+          <app-typeahead
+            #productTypeahead
+            label="Barcode / medicine"
+            placeholder="Type medicine name or scan barcode…"
+            [(ngModel)]="search"
+            [disabled]="busy()"
+            [searchFn]="productSuggestFn"
+            [clearOnSelect]="true"
+            (selected)="onProductTypeaheadPick($event)"
+            (submitted)="onProductTypeaheadSubmit($event)"
+          >
+            <app-button
+              ta-addon
+              (clicked)="resolveSearch()"
+              [disabled]="busy() || !search.trim()"
+              [loading]="busy()"
               >Add</app-button
             >
-          </div>
-          @if (suggestOpen()) {
-            <div class="suggest-panel" id="pos-suggest-list" role="listbox">
-              @if (suggestLoading()) {
-                <p class="suggest-status">Searching…</p>
-              } @else if (suggestEmpty()) {
-                <p class="suggest-status">No products found</p>
-              } @else {
-                <ul class="suggest-list">
-                  @for (s of suggestions(); track s.product.id; let i = $index) {
-                    <li>
-                      <button
-                        type="button"
-                        class="suggest-item"
-                        role="option"
-                        [class.active]="highlightIndex() === i"
-                        [attr.aria-selected]="highlightIndex() === i"
-                        (click)="pickSuggestion(s.product)"
-                        (mouseenter)="highlightIndex.set(i)"
-                      >
-                        <span class="suggest-main">
-                          <span class="suggest-name" [innerHTML]="highlightName(s.product.name)"></span>
-                          @if (productDetailLine(s.product); as detail) {
-                            <small>{{ detail }}</small>
-                          }
-                          <small class="suggest-sku">{{ s.product.sku }}</small>
-                        </span>
-                        <span class="suggest-meta">
-                          <span class="suggest-stock" [class.out]="s.availableQuantity === 0">
-                            @if (s.availableQuantity == null) {
-                              …
-                            } @else if (s.availableQuantity <= 0) {
-                              No stock
-                            } @else {
-                              Qty {{ s.availableQuantity | number: '1.0-2' }}
-                            }
-                          </span>
-                          <strong class="suggest-price">
-                            @if (s.salePrice != null) {
-                              {{ s.salePrice | currency: 'PKR':'symbol-narrow':'1.2-2' }}
-                            } @else {
-                              —
-                            }
-                          </strong>
-                        </span>
-                      </button>
-                    </li>
-                  }
-                </ul>
-              }
-            </div>
-          }
+          </app-typeahead>
         </div>
 
         @if (!lines().length) {
@@ -193,23 +139,15 @@
             <h2>Customer</h2>
             <app-button variant="ghost" size="sm" (clicked)="openCreateCustomer()">+ New</app-button>
           </div>
-          <div class="search-row compact">
-            <input
-              class="rail-input"
-              type="text"
-              [(ngModel)]="customerSearch"
-              (keydown)="onCustomerSearchKey($event)"
-              placeholder="Name, phone, or code"
-              autocomplete="off"
-            />
-            <app-button
-              variant="secondary"
-              size="sm"
-              (clicked)="searchCustomers()"
-              [disabled]="!customerSearch.trim()"
-              >Find</app-button
-            >
-          </div>
+          <app-typeahead
+            label="Find customer"
+            placeholder="Name, phone, or code"
+            [(ngModel)]="customerSearch"
+            [searchFn]="customerSuggestFn"
+            [clearOnSelect]="true"
+            (selected)="onCustomerTypeaheadPick($event)"
+            (submitted)="onCustomerTypeaheadSubmit($event)"
+          />
           @if (selectedCustomer(); as cust) {
             <div class="customer-selected">
               <div>
@@ -229,20 +167,6 @@
             </div>
           } @else {
             <p class="walkin">Walk-in customer</p>
-          }
-          @if (customerSuggestions().length) {
-            <ul class="suggestions compact">
-              @for (c of customerSuggestions(); track c.id) {
-                <li>
-                  <button type="button" (click)="pickCustomer(c)">
-                    <span>
-                      <strong>{{ c.name }}</strong>
-                      <small>{{ c.customerCode }}@if (c.phone) { · {{ c.phone }} }</small>
-                    </span>
-                  </button>
-                </li>
-              }
-            </ul>
           }
         </section>
 

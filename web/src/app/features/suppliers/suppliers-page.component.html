@@ -5,11 +5,13 @@
 </app-page-header>
 
 <div class="toolbar">
-  <app-input
+  <app-typeahead
     label="Search"
     placeholder="Code or name…"
     [(ngModel)]="search"
-    (inputKeydown)="$event.key === 'Enter' && load()"
+    [searchFn]="supplierSuggestFn"
+    (selected)="onSupplierSuggest($event)"
+    (submitted)="onSearchSubmit($event)"
   />
   <div class="toolbar-actions">
     <app-button variant="secondary" (clicked)="load()" [loading]="loading()">Search</app-button>

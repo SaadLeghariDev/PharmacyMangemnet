@@ -167,8 +167,13 @@
       <app-select label="Branch" [options]="branchPickOptions" [(ngModel)]="jobForm.branchId" (ngModelChange)="refreshJobLookups()" />
       <app-select label="Printer device" [options]="deviceOptions" [(ngModel)]="jobForm.printerDeviceId" />
       <app-select label="Template" [options]="templateOptions" [(ngModel)]="jobForm.templateId" />
-      <app-input label="Product search" [(ngModel)]="jobForm.productSearch" (ngModelChange)="productSearch($event)" />
-      <app-select label="Product" [options]="productOptions" [(ngModel)]="jobForm.productId" />
+      <app-typeahead
+        label="Product"
+        placeholder="Search product…"
+        [(ngModel)]="jobForm.productSearch"
+        [searchFn]="productSuggestFn"
+        (selected)="onJobProductPick($event)"
+      />
       <app-input label="Quantity" type="number" [(ngModel)]="jobForm.quantity" />
     </div>
   } @else {

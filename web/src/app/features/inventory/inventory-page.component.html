@@ -20,7 +20,13 @@
   </div>
 } @else {
   <div class="toolbar toolbar-fefo">
-    <app-input label="Product ID" type="number" [(ngModel)]="fefoProductId" />
+    <app-typeahead
+      label="Product"
+      placeholder="Search product…"
+      [(ngModel)]="fefoProductLabel"
+      [searchFn]="productSuggestFn"
+      (selected)="onFefoProductPick($event)"
+    />
     <app-input label="Warehouse ID" type="number" [(ngModel)]="fefoWarehouseId" />
     <app-input label="Required qty" type="number" [min]="1" [(ngModel)]="fefoQty" />
     <div class="toolbar-actions">

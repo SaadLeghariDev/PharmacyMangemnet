@@ -7,6 +7,7 @@ import {
   ProductDto,
   UpdateProductRequest,
 } from '../../core/models/api.models';
+import { map, Observable } from 'rxjs';
 import {
   AppBadgeComponent,
   AppButtonComponent,
@@ -19,6 +20,8 @@ import {
   AppSelectOption,
   AppTableColumn,
   AppTableComponent,
+  AppTypeaheadComponent,
+  AppTypeaheadItem,
   SnackbarService,
 } from '../../shared';
 
@@ -37,6 +40,7 @@ import {
     AppLoadingStateComponent,
     AppModalComponent,
     AppBadgeComponent,
+    AppTypeaheadComponent,
   ],
   templateUrl: './products-page.component.html',
   styleUrl: './products-page.component.scss',
@@ -49,7 +53,6 @@ export class ProductsPageComponent implements OnInit {
     { key: 'category', label: 'Category' },
     { key: 'form', label: 'Form' },
     { key: 'status', label: 'Status' },
-    { key: 'actions', label: 'Actions' },
   ];
 
   readonly statusOptions: AppSelectOption[] = [
@@ -154,6 +157,28 @@ export class ProductsPageComponent implements OnInit {
     this.search = '';
     this.statusFilter = '';
     this.load(1);
+  }
+
+  readonly productSuggestFn = (q: string): Observable<AppTypeaheadItem<ProductDto>[]> =>
+    this.api.searchProducts(q, 8).pipe(
+      map((items) =>
+        items.map((p) => ({
+          id: p.id,
+          label: p.name,
+          detail: [p.sku, p.genericName].filter(Boolean).join(' · '),
+          data: p,
+        })),
+      ),
+    );
+
+  onProductSuggest(item: AppTypeaheadItem<ProductDto>): void {
+    this.search = item.data?.sku || item.label;
+    this.applyFilters();
+  }
+
+  onSearchSubmit(q: string): void {
+    this.search = q;
+    this.applyFilters();
   }
 
   openCreate(): void {
