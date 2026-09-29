@@ -135,7 +135,6 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    // Serve Angular SPA from wwwroot (production publish to medistock.tryasp.net).
     app.UseDefaultFiles();
     app.UseStaticFiles();
 
@@ -148,7 +147,6 @@ try
             .WithOpenApiRoutePattern("/openapi/{documentName}.json");
     });
 
-    // Angular client-side routes (exclude API / docs / health).
     app.MapFallbackToFile("index.html");
 
     app.Run();
