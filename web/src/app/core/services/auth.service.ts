@@ -18,7 +18,10 @@ const EXPIRES_KEY = 'pms.expiresAtUtc';
 export class AuthService {
   private readonly userSignal = signal<UserProfile | null>(this.readUser());
   readonly user = this.userSignal.asReadonly();
-  readonly isAuthenticated = computed(() => !!this.getToken() && !!this.userSignal());
+  readonly isAuthenticated = computed(() => {
+    const user = this.userSignal();
+    return !!this.getToken() && !!user;
+  });
 
   constructor(
     private readonly http: HttpClient,

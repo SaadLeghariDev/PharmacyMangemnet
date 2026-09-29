@@ -1,12 +1,12 @@
 {
   "/api": {
-    "target": "http://pharmacycare.runasp.net",
+    "target": "https://pharmacycare.runasp.net",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "silent"
   },
   "/health": {
-    "target": "http://pharmacycare.runasp.net",
+    "target": "https://pharmacycare.runasp.net",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "silent"
